@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION</title>
-<meta name="description" content="WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION — an interactive Mythos explainer with free browser-based AI deep-dives powered by an online open-source LLM." />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f17" />
+<title>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS</title>
+<meta name="description" content="WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS — an interactive Mythos explainer with free browser-based AI deep-dives, plus a touch-first mobile version." />
 <style>
   :root{
     --bg:#0b0f17;
@@ -25,10 +26,23 @@
   html,body{margin:0;padding:0;background:radial-gradient(1200px 800px at 20% 0%,#15203a 0%,var(--bg) 60%) fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
-  header{padding:48px 24px 8px;text-align:center;max-width:900px;margin:0 auto;position:relative}
+  header{padding:48px 24px 8px;max-width:1180px;margin:0 auto;position:relative}
   header .eyebrow{letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-size:12px;margin-bottom:12px}
   header h1{font-size:clamp(28px,4.2vw,44px);margin:0 0 10px;line-height:1.15;background:linear-gradient(90deg,#cfd8ff,#b79bff 60%,#7c9cff);-webkit-background-clip:text;background-clip:text;color:transparent}
-  header p.lead{color:var(--muted);max-width:680px;margin:10px auto 0;font-size:16px;line-height:1.55}
+  header p.lead{color:var(--muted);max-width:720px;margin:12px 0 0;font-size:16px;line-height:1.55}
+  .hero{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:28px;align-items:start}
+  .hero-copy{text-align:left}
+  .byline{margin-top:8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .byline a{color:#dce2ff}
+  .qr-panel{display:flex;justify-content:flex-end}
+  .qr-link{display:grid;gap:10px;justify-items:center;width:200px;padding:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));box-shadow:0 22px 60px -40px rgba(124,156,255,.55)}
+  .qr-link:hover{text-decoration:none;border-color:var(--accent)}
+  .qr-frame{width:168px;height:168px;padding:10px;background:#f6f8ff;border-radius:18px;display:grid;place-items:center}
+  .qr-frame canvas,.qr-frame img{width:100%!important;height:100%!important;display:block}
+  .qr-caption{font-size:12px;color:var(--text);font-weight:600;text-align:center}
+  .qr-subcaption{font-size:11px;line-height:1.45;color:var(--muted);text-align:center}
+  .mobile-browser-note{margin-top:14px;display:none;padding:11px 14px;border:1px solid rgba(251,191,36,.22);border-radius:12px;background:rgba(251,191,36,.08);color:#ffe9b3;font-size:12px;line-height:1.5;max-width:720px}
+  .mobile-browser-note.show{display:block}
   .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
   .chip{font-size:12px;color:var(--muted);border:1px solid var(--border);padding:7px 12px;border-radius:999px;background:rgba(255,255,255,0.02);cursor:pointer;transition:all .15s ease}
   .chip:hover{color:#fff;border-color:var(--accent)}
@@ -41,6 +55,7 @@
   .btn.primary:hover{filter:brightness(1.1)}
   .btn.ghost{background:transparent}
   .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+  .btn,.chip,.node > .head,.ai-btn,.qr-link{touch-action:manipulation;-webkit-tap-highlight-color:rgba(124,156,255,.15)}
   .center{position:relative;text-align:center;margin:8px 0 20px}
   .center .pill{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(124,156,255,.08);border:1px solid rgba(124,156,255,.25);color:#cfd8ff;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
   .pulse{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 0 rgba(124,156,255,.6);animation:pulse 2s infinite}
@@ -109,15 +124,56 @@
   footer{max-width:900px;margin:32px auto 60px;padding:0 24px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
   footer .src{display:inline-block;margin-top:10px;padding:10px 14px;border:1px dashed var(--border);border-radius:10px}
 
-  @media (max-width:560px){.gear{top:14px;right:14px}}
+  @media (max-width:900px){
+    header{padding:32px 18px 8px}
+    .hero{grid-template-columns:1fr}
+    .qr-panel{display:none}
+    .chips{justify-content:flex-start}
+    main{padding:0 14px}
+    .toolbar{justify-content:stretch}
+    .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:48px}
+    .chip{min-height:44px;display:inline-flex;align-items:center}
+    .node > .head{padding:18px 16px}
+    .body-inner{padding:16px}
+  }
+  body.mobile-mode header{padding:28px 16px 6px}
+  body.mobile-mode .hero{grid-template-columns:1fr}
+  body.mobile-mode .qr-panel{display:none}
+  body.mobile-mode .chips{justify-content:flex-start}
+  body.mobile-mode main{padding:0 12px;margin:8px auto 40px}
+  body.mobile-mode .toolbar{justify-content:stretch}
+  body.mobile-mode .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:50px}
+  body.mobile-mode .chip{min-height:46px;display:inline-flex;align-items:center}
+  body.mobile-mode .node > .head{padding:18px 16px}
+  body.mobile-mode header p.lead{font-size:15px}
+  body.mobile-mode .center .pill{font-size:12px;line-height:1.4}
+  @media (max-width:560px){
+    .gear{top:14px;right:14px}
+    header h1{font-size:clamp(24px,10vw,34px)}
+    .byline{font-size:10px;letter-spacing:.14em}
+    .toolbar .btn{flex-basis:100%}
+  }
 </style>
 </head>
 <body>
   <header>
     <button class="gear" id="openSettings" title="LLM settings">⚙<span class="status-dot" id="statusDot"></span></button>
-    <div class="eyebrow">WHOSE INTERNET IS MYTHOS FIXING?</div>
-    <h1>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION</h1>
-    <p class="lead">An educational, click-to-explore breakdown of <strong>Mythos</strong> — an autonomous layer taking architectural control of global digital infrastructure, and the human interactions it shapes. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">WHOSE INTERNET IS MYTHOS FIXING?</div>
+        <h1>WHOSE INTERNET IS MYTHOS FIXING?</h1>
+        <div class="byline">by Rodger Werkhoven from <a href="https://anotherdimension.rocks" target="_blank" rel="noreferrer">ANÓTHERDIMENSION.ROCKS</a></div>
+        <p class="lead">An educational, click-to-explore breakdown of <strong>Mythos</strong> — an autonomous layer taking architectural control of global digital infrastructure, and the human interactions it shapes. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
+        <div class="mobile-browser-note" id="mobileBrowserNote" hidden>Touch-first mobile mode works everywhere, but it feels best in Chrome on phones.</div>
+      </div>
+      <aside class="qr-panel" aria-label="Mobile QR code">
+        <a class="qr-link" id="qrLink" href="./mobile.html" title="Open the mobile version">
+          <div class="qr-frame"><canvas id="qrCanvas" aria-hidden="true"></canvas></div>
+          <div class="qr-caption">Scan for the mobile version</div>
+          <div class="qr-subcaption">Touch-first layout. Best opened in Chrome.</div>
+        </a>
+      </aside>
+    </div>
     <div class="chips" id="chips">
       <span class="chip active" data-filter="all">All</span>
       <span class="chip" data-filter="ai">AI &amp; Infrastructure</span>
@@ -143,7 +199,7 @@
   </main>
 
   <footer>
-    WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION<br/>
+    by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS<br/>
     <span class="src">Source lens: Mythos — The Architecture of Autonomous Infrastructure Control</span>
   </footer>
 
@@ -185,6 +241,7 @@
   </div>
 
 <script src="https://js.puter.com/v2/"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 <script>
 /* =========================================================
    DATA — full nested mindmap
@@ -471,6 +528,56 @@ const providerSel = document.getElementById('provider');
 const modelInp = document.getElementById('model');
 const keyInp = document.getElementById('apikey');
 const statusDot = document.getElementById('statusDot');
+const qrLink = document.getElementById('qrLink');
+const qrCanvas = document.getElementById('qrCanvas');
+const mobileBrowserNote = document.getElementById('mobileBrowserNote');
+const MOBILE_REDIRECT_URL = new URL('mobile.html', location.href).href;
+const FORCED_MOBILE_MODE = new URLSearchParams(location.search).get('mobile') === '1';
+const TOUCH_DEVICE = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+const CHROME_LIKE_BROWSER = /CriOS|Chrome/i.test(navigator.userAgent) && !/Edg|OPR|SamsungBrowser/i.test(navigator.userAgent);
+
+if(FORCED_MOBILE_MODE) document.body.classList.add('mobile-mode');
+if(qrLink) qrLink.href = MOBILE_REDIRECT_URL;
+
+function renderMobileQRCode(){
+  if(!qrCanvas) return;
+  const qrOptions = {
+    width: 148,
+    margin: 1,
+    color: {
+      dark: '#0b0f17',
+      light: '#0000'
+    }
+  };
+
+  if(window.QRCode?.toCanvas){
+    window.QRCode.toCanvas(qrCanvas, MOBILE_REDIRECT_URL, qrOptions, (err) => {
+      if(err) renderMobileQRCodeFallback();
+    });
+    return;
+  }
+
+  renderMobileQRCodeFallback();
+}
+
+function renderMobileQRCodeFallback(){
+  if(!qrCanvas?.parentElement) return;
+  qrCanvas.replaceWith(Object.assign(document.createElement('img'), {
+    src: `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(MOBILE_REDIRECT_URL)}`,
+    alt: 'QR code for the mobile version'
+  }));
+}
+
+function updateMobileBrowserNote(){
+  if(!mobileBrowserNote) return;
+  const shouldShow = (FORCED_MOBILE_MODE || TOUCH_DEVICE || window.innerWidth <= 900) && !CHROME_LIKE_BROWSER;
+  mobileBrowserNote.hidden = !shouldShow;
+  mobileBrowserNote.classList.toggle('show', shouldShow);
+}
+
+renderMobileQRCode();
+updateMobileBrowserNote();
+window.addEventListener('resize', updateMobileBrowserNote);
 
 function loadSettings(){
   try {
