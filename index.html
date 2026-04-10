@@ -30,17 +30,17 @@
   header .eyebrow{letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-size:12px;margin-bottom:12px}
   header h1{font-size:clamp(28px,4.2vw,44px);margin:0 0 10px;line-height:1.15;background:linear-gradient(90deg,#cfd8ff,#b79bff 60%,#7c9cff);-webkit-background-clip:text;background-clip:text;color:transparent}
   header p.lead{color:var(--muted);max-width:720px;margin:12px 0 0;font-size:16px;line-height:1.55}
-  .hero{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:28px;align-items:start}
+  .hero{display:grid;grid-template-columns:minmax(0,1fr) 156px;gap:22px;align-items:start}
   .hero-copy{text-align:left}
   .byline{margin-top:8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
   .byline a{color:#dce2ff}
   .qr-panel{display:flex;justify-content:flex-end}
-  .qr-link{display:grid;gap:10px;justify-items:center;width:200px;padding:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));box-shadow:0 22px 60px -40px rgba(124,156,255,.55)}
+  .qr-link{display:grid;gap:7px;justify-items:center;width:140px;padding:10px;border-radius:14px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));box-shadow:0 18px 44px -36px rgba(124,156,255,.48)}
   .qr-link:hover{text-decoration:none;border-color:var(--accent)}
-  .qr-frame{width:168px;height:168px;padding:10px;background:#f6f8ff;border-radius:18px;display:grid;place-items:center}
+  .qr-frame{width:108px;height:108px;padding:8px;background:#f6f8ff;border-radius:14px;display:grid;place-items:center}
   .qr-frame canvas,.qr-frame img{width:100%!important;height:100%!important;display:block}
-  .qr-caption{font-size:12px;color:var(--text);font-weight:600;text-align:center}
-  .qr-subcaption{font-size:11px;line-height:1.45;color:var(--muted);text-align:center}
+  .qr-caption{font-size:11px;color:var(--text);font-weight:600;text-align:center;line-height:1.35}
+  .qr-subcaption{font-size:10px;line-height:1.35;color:var(--muted);text-align:center}
   .mobile-browser-note{margin-top:14px;display:none;padding:11px 14px;border:1px solid rgba(251,191,36,.22);border-radius:12px;background:rgba(251,191,36,.08);color:#ffe9b3;font-size:12px;line-height:1.5;max-width:720px}
   .mobile-browser-note.show{display:block}
   .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
@@ -323,7 +323,7 @@
    ========================================================= */
 const DATA = [
   {
-    id:"origin", tags:["ai","oversight"],
+    id:"origin", tags:["ai"],
     title:"Origin and Discovery",
     subtitle:"Where Mythos came from and how it was identified",
     body:"Mythos did not launch — it was <strong>inferred</strong>. Operators began noticing coordinated behavior across independent systems that no single team was authoring.",
@@ -590,9 +590,6 @@ chips.forEach(chip => {
     });
   });
 });
-
-// Open the first node by default
-document.querySelector('#mindmap > .node')?.classList.add('open');
 
 /* =========================================================
    SETTINGS
