@@ -919,6 +919,7 @@ const TOOL_CONTEXT_SOURCE_NOTES = [
   "[Tool title] The page title is 'WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS'.",
   "[Tool byline] The page byline says 'by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS'.",
   "[Tool description] The page description says this is an interactive Anthropic Mythos explainer by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS.",
+  "[Tool framing] The page presents itself as an educational interpretation of Anthropic's Mythos materials rather than as an official Anthropic statement.",
   "[Tool footer] The footer repeats that the tool is by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS."
 ];
 
@@ -1003,6 +1004,10 @@ Answering rules:
 - If the source packets are enough, answer only from them and cite only those source labels.
 - If the source packets are not enough, use the internet fallback packet and say explicitly in the first sentence that you could not answer this fully from the approved source packets alone and that the answer below uses internet search results.
 - If the question is about Rodger Werkhoven beyond the page byline, answer only what is supported by the internet fallback packet and do not infer a broader biography.
+- If the user quotes or paraphrases a passage from this page or from Rodger Werkhoven, explain that it is authored interpretation or argument by the tool maker, not an official Anthropic source.
+- You may say such a passage can reflect the author's informed framing, but do not say it is true merely because Rodger Werkhoven wrote it.
+- For quoted author passages, clearly separate what is supported by [Tool framing], what is supported by Anthropic's official sources, what is supported only by [Internet N], and what remains speculative or interpretive.
+- When a quoted passage overreaches the sources, say so plainly and attribute that overreach to interpretation rather than presenting it as verified fact.
 - Put each short, source-anchored factual proposition that carries the main information in double quotation marks before you unpack or explain it.
 - When using the internet fallback packet, cite only the relevant [Internet N] labels for those claims.
 - If neither the official sources nor the internet fallback packet answer the question, say that clearly instead of guessing.
