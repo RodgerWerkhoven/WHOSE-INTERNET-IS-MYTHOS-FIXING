@@ -106,6 +106,10 @@
   .ai-loading{display:inline-block;width:10px;height:10px;border-radius:999px;background:var(--accent-2);animation:pulse 1.2s infinite}
 
   /* Source-grounded Q&A */
+  .qa-gate{margin:0 0 22px;display:flex;justify-content:center}
+  .qa-reveal-btn{width:min(100%,440px);padding:11px 14px;border-radius:14px;border:1px solid rgba(124,156,255,.2);background:rgba(11,15,23,.55);color:#dde5ff;font:inherit;font-size:13px;line-height:1.45;letter-spacing:.01em;cursor:pointer;transition:border-color .15s ease, transform .15s ease, color .15s ease, background .15s ease;text-align:center;box-shadow:0 16px 40px -34px rgba(124,156,255,.45)}
+  .qa-reveal-btn:hover{border-color:var(--accent);color:#fff;transform:translateY(-1px);background:rgba(124,156,255,.08)}
+  .qa-reveal-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   .qa-panel{margin:0 0 22px;padding:20px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(124,156,255,.08),rgba(255,255,255,.02));box-shadow:0 24px 70px -48px rgba(124,156,255,.45)}
   .qa-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#d4dcff;margin-bottom:10px}
   .qa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,460px);gap:18px;align-items:start}
@@ -155,6 +159,7 @@
     .qr-panel{display:none}
     .chips{justify-content:flex-start}
     main{padding:0 14px}
+    .qa-reveal-btn{width:100%}
     .qa-grid{grid-template-columns:1fr}
     .toolbar{justify-content:stretch}
     .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:48px}
@@ -167,6 +172,7 @@
   body.mobile-mode .qr-panel{display:none}
   body.mobile-mode .chips{justify-content:flex-start}
   body.mobile-mode main{padding:0 12px;margin:8px auto 40px}
+  body.mobile-mode .qa-reveal-btn{width:100%;min-height:52px;font-size:14px}
   body.mobile-mode .qa-grid{grid-template-columns:1fr}
   body.mobile-mode .qa-panel{padding:16px}
   body.mobile-mode .qa-form textarea{min-height:160px;font-size:16px}
@@ -224,11 +230,15 @@
       <button class="btn ghost" id="openSettings2">⚙ LLM settings</button>
     </div>
 
-    <section class="qa-panel" id="qaPanel" aria-labelledby="qaTitle">
+    <div class="qa-gate" id="qaGate">
+      <button class="qa-reveal-btn" id="qaRevealBtn" type="button" aria-controls="qaPanel" aria-expanded="false">Ask a question and force the answer back to the sources</button>
+    </div>
+
+    <section class="qa-panel" id="qaPanel" aria-labelledby="qaTitle" hidden>
       <div class="qa-kicker">Source-grounded Q&amp;A</div>
       <div class="qa-grid">
         <div class="qa-copy">
-          <h2 class="qa-title" id="qaTitle">Ask a question and force the answer back to the sources</h2>
+          <h2 class="qa-title" id="qaTitle">Question for the sources</h2>
           <p>This box is for typed questions, not mindmap expansion. The AI should answer from Anthropic's official Mythos sources, using the <strong>Claude Mythos Preview System Card</strong> for facts first and <strong>Project Glasswing</strong> for program context second. If the sources do not support an answer, it should say so plainly.</p>
           <div class="qa-sources">
             <div class="qa-source">
@@ -599,6 +609,9 @@ const statusDot = document.getElementById('statusDot');
 const qrLink = document.getElementById('qrLink');
 const qrCanvas = document.getElementById('qrCanvas');
 const mobileBrowserNote = document.getElementById('mobileBrowserNote');
+const qaGate = document.getElementById('qaGate');
+const qaRevealBtn = document.getElementById('qaRevealBtn');
+const qaPanel = document.getElementById('qaPanel');
 const qaInput = document.getElementById('qaInput');
 const qaAskBtn = document.getElementById('askQa');
 const qaClearBtn = document.getElementById('clearQa');
@@ -837,6 +850,17 @@ document.getElementById('clearKey').addEventListener('click', () => {
 modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
 
 updateStatus();
+
+qaRevealBtn?.addEventListener('click', () => {
+  if(!qaPanel) return;
+  qaPanel.hidden = false;
+  qaGate?.setAttribute('hidden', '');
+  qaRevealBtn.setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => {
+    qaPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    qaInput?.focus();
+  });
+});
 
 qaAskBtn?.addEventListener('click', askSourceGroundedQuestion);
 qaClearBtn?.addEventListener('click', () => {
