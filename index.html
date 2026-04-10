@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mythos — The Architecture of Autonomous Infrastructure Control</title>
-<meta name="description" content="Interactive educational mindmap of Mythos: the architect of a new global infrastructure. Bring your own LLM to explore deeper." />
+<title>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION</title>
+<meta name="description" content="WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION — an interactive Mythos explainer with free browser-based AI deep-dives powered by an online open-source LLM." />
 <style>
   :root{
     --bg:#0b0f17;
@@ -115,9 +115,9 @@
 <body>
   <header>
     <button class="gear" id="openSettings" title="LLM settings">⚙<span class="status-dot" id="statusDot"></span></button>
-    <div class="eyebrow">Interactive Educational Mindmap</div>
-    <h1>Mythos: The Architecture of Autonomous Infrastructure Control</h1>
-    <p class="lead">An educational, click-to-explore breakdown of <strong>Mythos</strong> — an autonomous layer taking architectural control of global digital infrastructure, and the human interactions it shapes. Connect your own LLM to go deeper on any node, live.</p>
+    <div class="eyebrow">WHOSE INTERNET IS MYTHOS FIXING?</div>
+    <h1>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION</h1>
+    <p class="lead">An educational, click-to-explore breakdown of <strong>Mythos</strong> — an autonomous layer taking architectural control of global digital infrastructure, and the human interactions it shapes. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
     <div class="chips" id="chips">
       <span class="chip active" data-filter="all">All</span>
       <span class="chip" data-filter="ai">AI &amp; Infrastructure</span>
@@ -130,7 +130,7 @@
 
   <main>
     <div class="center">
-      <span class="pill"><span class="pulse"></span> Mythos — The Architect of a New Global Infrastructure</span>
+      <span class="pill"><span class="pulse"></span> Mythos — The Architecture of Autonomous Infrastructure Control</span>
     </div>
 
     <div class="toolbar">
@@ -143,20 +143,20 @@
   </main>
 
   <footer>
-    Educational summary — an interpretation, not a product page, not an endorsement.<br/>
-    <span class="src">Source: Mythos — The Architecture of Autonomous Infrastructure Control</span>
+    WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHER DIMENSION<br/>
+    <span class="src">Source lens: Mythos — The Architecture of Autonomous Infrastructure Control</span>
   </footer>
 
   <!-- Settings modal -->
   <div class="modal-backdrop" id="modal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h2 id="modalTitle">LLM connection</h2>
-      <p class="help"><strong>Plan A</strong> (default): free public open-source model via Pollinations.ai — no key, no signup, works out of the box.<br/><strong>Plan B</strong>: bring your own API key for a provider you prefer. Keys stay in your browser only.</p>
+      <p class="help"><strong>Plan A</strong> (default): free browser-based access to an online open-source model via Puter.js — no key, no signup, works out of the box.<br/><strong>Plan B</strong>: bring your own API key for a provider you prefer. Keys stay in your browser only.</p>
 
       <div class="field">
         <label for="provider">Provider</label>
         <select id="provider">
-          <option value="pollinations">Pollinations.ai — free, open-source, no key (Plan A)</option>
+          <option value="puter">Puter.js + Llama 4 Maverick — free, open-source, no key (Plan A)</option>
           <option value="openai">OpenAI (api.openai.com) — Plan B</option>
           <option value="anthropic">Anthropic (api.anthropic.com) — Plan B</option>
           <option value="groq">Groq (api.groq.com) — Plan B</option>
@@ -165,7 +165,7 @@
       </div>
       <div class="field">
         <label for="model">Model</label>
-        <input id="model" placeholder="e.g. mistral, gpt-4o-mini, claude-sonnet-4-5" />
+        <input id="model" placeholder="e.g. openrouter:meta-llama/llama-4-maverick, gpt-4o-mini, claude-sonnet-4-5" />
       </div>
       <div class="field" id="keyField">
         <label for="apikey">API key (not needed for Plan A)</label>
@@ -173,7 +173,7 @@
       </div>
 
       <div class="privacy">
-        ⚠ Plan A calls a free public endpoint — expect occasional rate limits or slower responses. For Plan B, your key sits in your browser's localStorage and is sent directly to the provider you chose. Anyone on this device can read it — use a throwaway key with a spend limit for public pages.
+        ⚠ Plan A runs through Puter.js in the browser and does not need an API key. For Plan B, your key sits in your browser's localStorage and is sent directly to the provider you chose. Anyone on this device can read it — use a throwaway key with a spend limit for public pages.
       </div>
 
       <div class="row">
@@ -184,6 +184,7 @@
     </div>
   </div>
 
+<script src="https://js.puter.com/v2/"></script>
 <script>
 /* =========================================================
    DATA — full nested mindmap
@@ -463,7 +464,8 @@ document.querySelector('#mindmap > .node')?.classList.add('open');
 /* =========================================================
    SETTINGS
    ========================================================= */
-const STORAGE_KEY = 'mythos_llm_settings_v1';
+const LEGACY_STORAGE_KEY = 'mythos_llm_settings_v1';
+const STORAGE_KEY = 'mythos_llm_settings_v2';
 const modal = document.getElementById('modal');
 const providerSel = document.getElementById('provider');
 const modelInp = document.getElementById('model');
@@ -472,17 +474,22 @@ const statusDot = document.getElementById('statusDot');
 
 function loadSettings(){
   try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    // Default to Plan A
-    if(!s.provider){ s.provider = 'pollinations'; s.model = 'qwen-coder'; }
-    // Upgrade legacy default
-    if(s.provider === 'pollinations' && s.model === 'mistral') s.model = 'qwen-coder';
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+    const s = (current && Object.keys(current).length ? current : legacy) || {};
+    if(!s.provider) s.provider = 'puter';
+    if(s.provider === 'pollinations') s.provider = 'puter';
+    if(!s.model || s.model === 'qwen-coder' || s.model === 'mistral') s.model = defaultModelFor(s.provider);
     return s;
-  } catch(_) { return { provider:'pollinations', model:'qwen-coder' }; }
+  } catch(_) { return { provider:'puter', model:defaultModelFor('puter') }; }
 }
-function saveSettings(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); updateStatus(); }
+function saveSettings(s){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  updateStatus();
+}
 function isReady(s){
-  if(s.provider === 'pollinations') return !!s.model;
+  if(s.provider === 'puter') return !!s.model;
   return !!(s.apikey && s.provider && s.model);
 }
 function updateStatus(){
@@ -490,12 +497,12 @@ function updateStatus(){
   const ok = isReady(s);
   statusDot.classList.toggle('ok', !!ok);
   statusDot.title = ok
-    ? (s.provider === 'pollinations' ? `Plan A: Pollinations / ${s.model}` : `Plan B: ${s.provider} / ${s.model}`)
+    ? (s.provider === 'puter' ? `Plan A: Puter / ${s.model}` : `Plan B: ${s.provider} / ${s.model}`)
     : 'No LLM connected';
 }
 function openModal(){
   const s = loadSettings();
-  providerSel.value = s.provider || 'pollinations';
+  providerSel.value = s.provider || 'puter';
   modelInp.value = s.model || defaultModelFor(providerSel.value);
   keyInp.value = s.apikey || '';
   toggleKeyField();
@@ -504,7 +511,7 @@ function openModal(){
 function closeModal(){ modal.classList.remove('open'); }
 function defaultModelFor(p){
   return ({
-    pollinations:'qwen-coder',
+    puter:'openrouter:meta-llama/llama-4-maverick',
     openai:'gpt-4o-mini',
     anthropic:'claude-sonnet-4-5',
     groq:'llama-3.3-70b-versatile',
@@ -513,7 +520,7 @@ function defaultModelFor(p){
 }
 function toggleKeyField(){
   const field = document.getElementById('keyField');
-  if(providerSel.value === 'pollinations'){
+  if(providerSel.value === 'puter'){
     field.style.opacity = '.5';
     keyInp.disabled = true;
   } else {
@@ -539,7 +546,9 @@ document.getElementById('saveSettings').addEventListener('click', () => {
 });
 document.getElementById('clearKey').addEventListener('click', () => {
   keyInp.value = '';
-  saveSettings({});
+  const s = loadSettings();
+  s.apikey = '';
+  saveSettings(s);
 });
 modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
 
@@ -580,8 +589,8 @@ async function runAIDeepDive(node, idxPath, btn, out){
   try {
     if(s.provider === 'anthropic'){
       await streamAnthropic(s, prompt, (chunk) => { out.textContent += chunk; });
-    } else if(s.provider === 'pollinations'){
-      await callPollinations(s, prompt, (chunk) => { out.textContent += chunk; });
+    } else if(s.provider === 'puter'){
+      await streamPuterOpenSource(s, prompt, (chunk) => { out.textContent += chunk; });
     } else {
       await streamOpenAICompat(s, prompt, (chunk) => { out.textContent += chunk; });
     }
@@ -595,44 +604,42 @@ async function runAIDeepDive(node, idxPath, btn, out){
   }
 }
 
-// Plan A — Pollinations.ai free public endpoint, no key required
-// Uses a GET call with Qwen2.5-Coder. GET avoids CORS preflight so it
-// works from file://, GitHub Pages, and any other origin. The `referrer`
-// query parameter identifies the app on Pollinations' free tier.
-async function callPollinations(s, prompt, onChunk){
-  const model = s.model || 'qwen-coder';
-  const system = 'You are an educational writer expanding a node in a mindmap about "Mythos: The Architecture of Autonomous Infrastructure Control". Write 250-400 words in clear paragraphs, no markdown headers, specific and thoughtful.';
-  const params = new URLSearchParams({
-    model,
-    referrer: 'mythos-mindmap',
-    system,
-    seed: String(Math.floor(Math.random()*1e9))
-  });
-  const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?${params.toString()}`;
+function normalizePuterText(response){
+  if(typeof response === 'string') return response;
+  const parts = response?.message?.content;
+  if(Array.isArray(parts)) return parts.map((part) => part?.text || '').join('');
+  return response?.message?.content || response?.text || '';
+}
 
-  let res;
-  try {
-    res = await fetch(url, { method:'GET' });
-  } catch(err){
-    throw new Error(`Network error reaching Pollinations: ${err.message}. If you opened this file locally, try deploying it (GitHub Pages) or switch to Plan B in ⚙ settings.`);
+async function streamPuterOpenSource(s, prompt, onChunk){
+  if(!window.puter?.ai?.chat){
+    throw new Error('Puter.js did not load. Refresh the page and try again.');
   }
-  if(!res.ok){
-    const body = await res.text().catch(()=>'');
-    throw new Error(`Pollinations returned ${res.status}. ${body.slice(0,200)} — try again in a minute or switch to Plan B.`);
+
+  const response = await window.puter.ai.chat(prompt, {
+    model: s.model || defaultModelFor('puter'),
+    stream: true
+  });
+
+  let sawText = false;
+  for await (const part of response) {
+    const chunk = part?.text || '';
+    if(chunk){
+      sawText = true;
+      onChunk(chunk);
+    }
   }
-  const text = await res.text();
+
+  if(sawText) return;
+
+  const fallback = await window.puter.ai.chat(prompt, {
+    model: s.model || defaultModelFor('puter')
+  });
+  const text = normalizePuterText(fallback);
   if(!text || !text.trim()){
-    throw new Error('Pollinations returned an empty response. Try again, or switch to Plan B in ⚙ settings.');
+    throw new Error('Puter returned an empty response. Try again in a few seconds or switch provider in ⚙ settings.');
   }
-  // Response is plain text for the GET endpoint; if it looks like JSON, unwrap.
-  let out = text;
-  if(text.trim().startsWith('{')){
-    try {
-      const j = JSON.parse(text);
-      out = j.choices?.[0]?.message?.content || j.response || j.text || text;
-    } catch(_){}
-  }
-  onChunk(out);
+  onChunk(text);
 }
 
 async function streamOpenAICompat(s, prompt, onChunk){
