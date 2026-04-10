@@ -254,7 +254,7 @@
             <button class="btn primary" id="askQa">Ask the sources</button>
             <button class="btn ghost" id="clearQa">Clear</button>
           </div>
-          <div class="qa-note">The answer is instructed to stay inside the System Card and Glasswing source packet and end with source citations.</div>
+          <div class="qa-note">The answer uses the official Anthropic source packet first. If that is not enough, the tool searches the web, then explicitly labels the answer as internet fallback and cites those internet results.</div>
           <div class="qa-output" id="qaOutput"></div>
         </div>
       </div>
@@ -609,6 +609,7 @@ const FORCED_MOBILE_MODE = new URLSearchParams(location.search).get('mobile') ==
 const TOUCH_DEVICE = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const CHROME_LIKE_BROWSER = /CriOS|Chrome/i.test(navigator.userAgent) && !/Edg|OPR|SamsungBrowser/i.test(navigator.userAgent);
 const SECURE_PROXY_URL = new URL('/api/chat', location.origin).href;
+const QA_CONTEXT_URL = new URL('/api/qa-context', location.origin).href;
 let sessionApiKey = '';
 let secureProxyState = {
   checked: false,
@@ -920,10 +921,31 @@ function buildScopeLine(node){
   return `Primary facts come from Anthropic's April 2026 Claude Mythos Preview System Card; Project Glasswing is secondary context. This deep-dive keeps "${focus}" tied to Mythos's defensive security, agentic coding, critical-infrastructure, and oversight implications.`;
 }
 
-function buildQAPrompt(question){
+function formatInternetFallbackPacket(packet){
+  if(!packet?.results?.length){
+    return 'Internet fallback packet: no usable web search results were available for this question.';
+  }
+
+  return [
+    `Internet fallback search query: ${packet.query || ''}`,
+    packet.note || '',
+    ...packet.results.map((result) => {
+      const parts = [
+        `[${result.id}] ${result.title}`,
+        `URL: ${result.url}`,
+        result.pubDate ? `Date: ${result.pubDate}` : '',
+        result.snippet ? `Search snippet: ${result.snippet}` : '',
+        result.excerpt ? `Fetched page excerpt: ${result.excerpt}` : ''
+      ].filter(Boolean);
+      return parts.join('\n');
+    })
+  ].filter(Boolean).join('\n\n');
+}
+
+function buildQAPrompt(question, internetFallbackPacket){
   return `You are answering a user's question about Anthropic's Claude Mythos Preview and Project Glasswing.
 
-You must answer from the approved source packet below and nowhere else.
+You must answer from the approved source packet below. Use the official Anthropic sources first. Only if they do not answer the question well enough may you use the internet fallback packet.
 
 Source priority:
 ${ANTHROPIC_SOURCE_STACK.map((item) => `- ${item}`).join('\n')}
@@ -934,17 +956,22 @@ ${SYSTEM_CARD_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
 Project Glasswing source packet:
 ${GLASSWING_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
 
+${formatInternetFallbackPacket(internetFallbackPacket)}
+
 User question:
 ${question}
 
 Answering rules:
 - Treat the System Card as the source of truth for model facts, capabilities, risks, restrictions, mitigations, and release status.
 - Use Project Glasswing for launch context, partner context, deployment plans, public framing, credits, and operational scope.
-- If the answer is not established by the source packet, say exactly that instead of guessing.
+- If the official source packet is enough, answer only from it and cite only official sources.
+- If the official source packet is not enough, use the internet fallback packet and say explicitly in the first sentence that you could not answer this from the official Mythos sources alone and that the answer below uses internet search results.
+- When using the internet fallback packet, cite only the relevant [Internet N] labels for those claims.
+- If neither the official sources nor the internet fallback packet answer the question, say that clearly instead of guessing.
 - Do not invent benchmarks, customer names, release plans, internal intentions, or technical details not present in the source packet.
 - If the question contains a mistaken assumption, correct it gently using the source packet.
 - Answer in 2-4 short paragraphs.
-- End with a final line starting with "Sources:" and cite only the source labels that support the answer, such as [System Card p.3] or [Glasswing plans].
+- End with a final line starting with "Sources:" and cite only the source labels that support the answer, such as [System Card p.3], [Glasswing plans], or [Internet 2].
 
 Be factual, concise, and explicit about uncertainty.`;
 }
@@ -1033,13 +1060,14 @@ async function askSourceGroundedQuestion(){
   }
 
   qaAskBtn.disabled = true;
-  qaAskBtn.innerHTML = '<span class="ai-loading"></span> Reading the sources…';
+  qaAskBtn.innerHTML = '<span class="ai-loading"></span> Reading sources + web fallback…';
   qaOutput.classList.remove('error');
   qaOutput.textContent = '';
   qaOutput.classList.add('visible');
 
   try {
-    await streamCurrentProvider(s, buildQAPrompt(question), (chunk) => { qaOutput.textContent += chunk; });
+    const internetFallbackPacket = await fetchQAFallbackContext(question);
+    await streamCurrentProvider(s, buildQAPrompt(question, internetFallbackPacket), (chunk) => { qaOutput.textContent += chunk; });
     qaAskBtn.innerHTML = '↻ Ask again';
   } catch(err){
     qaOutput.textContent = 'Error: ' + (err.message || err);
@@ -1047,6 +1075,28 @@ async function askSourceGroundedQuestion(){
     qaAskBtn.innerHTML = '↻ Try again';
   } finally {
     qaAskBtn.disabled = false;
+  }
+}
+
+async function fetchQAFallbackContext(question){
+  try {
+    const res = await fetch(QA_CONTEXT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Accept':'application/json'
+      },
+      body: JSON.stringify({ question })
+    });
+    if(!res.ok) throw new Error(`Fallback search error (${res.status})`);
+    return await res.json();
+  } catch(err){
+    return {
+      ok: false,
+      note: `Internet fallback search was unavailable for this request: ${err.message || err}`,
+      query: question,
+      results: []
+    };
   }
 }
 
