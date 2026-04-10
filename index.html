@@ -165,7 +165,7 @@
         <div class="eyebrow">WHOSE INTERNET IS MYTHOS FIXING?</div>
         <h1>WHOSE INTERNET IS MYTHOS FIXING?</h1>
         <div class="byline">by Rodger Werkhoven from <a href="https://anotherdimension.rocks" target="_blank" rel="noreferrer">ANÓTHERDIMENSION.ROCKS</a></div>
-        <p class="lead">An educational, click-to-explore interpretation of <strong>Anthropic's Claude Mythos Preview</strong> and Project Glasswing, reading each branch through cyber defense, infrastructure control, human oversight, and the wider systems it could reshape. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
+        <p class="lead">An educational, click-to-explore interpretation of <strong>Anthropic's Claude Mythos Preview</strong>, grounded first in Anthropic's April 2026 System Card and then in Project Glasswing context, reading each branch through cyber defense, infrastructure control, human oversight, and the wider systems it could reshape. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
         <div class="mobile-browser-note" id="mobileBrowserNote" hidden>Touch-first mobile mode works everywhere, but it feels best in Chrome on phones.</div>
       </div>
       <aside class="qr-panel" aria-label="Mobile QR code">
@@ -188,7 +188,7 @@
 
   <main>
     <div class="center">
-      <span class="pill"><span class="pulse"></span> Anthropic's Claude Mythos Preview / Project Glasswing lens</span>
+      <span class="pill"><span class="pulse"></span> Anthropic Mythos System Card first, Project Glasswing second</span>
     </div>
 
     <div class="toolbar">
@@ -202,7 +202,7 @@
 
   <footer>
     by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS<br/>
-    <span class="src">Source lens: Anthropic's Claude Mythos Preview / Project Glasswing, interpreted through this Mythos map</span>
+    <span class="src">Source stack: <a href="https://www-cdn.anthropic.com/08ab9158070959f88f296514c21b7facce6f52bc.pdf" target="_blank" rel="noreferrer">Claude Mythos Preview System Card</a> (primary facts) + <a href="https://www.anthropic.com/glasswing" target="_blank" rel="noreferrer">Project Glasswing</a> (program context), interpreted through this Mythos map</span>
   </footer>
 
   <!-- Settings modal -->
@@ -471,7 +471,7 @@ function renderNode(node, depth=0, idxPath=[]){
     <div class="ai-scope"><strong>Anthropic Mythos lens:</strong> ${escapeHtml(buildScopeLine(node))}</div>
     <div class="ai-row">
       <button class="btn primary ai-btn">✨ Explore Anthropic Mythos deeper</button>
-      <span class="hint">Starts from Claude Mythos Preview in Project Glasswing, then expands this node through that lens.</span>
+      <span class="hint">Uses Anthropic's System Card for facts first, then Project Glasswing for context around this node.</span>
     </div>
     <div class="ai-output"></div>
   `;
@@ -667,10 +667,18 @@ updateStatus();
 /* =========================================================
    LLM CALLS — direct from browser, streaming
    ========================================================= */
+const ANTHROPIC_SOURCE_STACK = [
+  "Primary source: Anthropic's 'Claude Mythos Preview System Card' dated April 7, 2026, with changelog updates on April 8, 2026.",
+  "Secondary source: Anthropic's 'Project Glasswing' launch page for deployment context, partners, and public framing."
+];
+
 const ANTHROPIC_MYTHOS_FACTS = [
-  "Claude Mythos Preview is Anthropic's unreleased frontier model presented under Project Glasswing.",
-  "Anthropic describes it as a general-purpose model with unusually strong cybersecurity, agentic coding, reasoning, and vulnerability-finding/exploitation capabilities.",
-  "Project Glasswing is about deploying these capabilities for defensive security work on critical software and infrastructure.",
+  "Claude Mythos Preview is a large language model from Anthropic and Anthropic's most capable frontier model to date.",
+  "Anthropic says Claude Mythos Preview is not generally available; instead it is being used in a limited defensive cybersecurity program with selected partners.",
+  "Anthropic says partner access is restricted to cybersecurity uses and includes organizations that maintain important software infrastructure.",
+  "Anthropic describes Mythos Preview as a general-purpose model with unusually strong cybersecurity, agentic coding, reasoning, and vulnerability-finding/exploitation capabilities.",
+  "Anthropic says Mythos Preview can autonomously find zero-days in authorized settings and in many cases turn them into proof-of-concept exploits with minimal human steering.",
+  "Project Glasswing is Anthropic's effort to put these capabilities to work for defensive security on critical software and infrastructure with industry and open-source partners.",
   "If this page becomes more metaphorical or speculative than Anthropic's official framing, that shift must be labeled as interpretation rather than fact."
 ];
 
@@ -692,7 +700,7 @@ function htmlToText(value = ''){
 
 function buildScopeLine(node){
   const focus = [node.title, node.subtitle].filter(Boolean).join(' — ');
-  return `Claude Mythos Preview is Anthropic's Project Glasswing cyber model. This deep-dive keeps "${focus}" tied to its defensive security, agentic coding, critical-infrastructure, and oversight implications.`;
+  return `Primary facts come from Anthropic's April 2026 Claude Mythos Preview System Card; Project Glasswing is secondary context. This deep-dive keeps "${focus}" tied to Mythos's defensive security, agentic coding, critical-infrastructure, and oversight implications.`;
 }
 
 function buildPrompt(node, idxPath){
@@ -705,6 +713,9 @@ function buildPrompt(node, idxPath){
     ...((node.children || []).flatMap((child) => [child.title, child.subtitle, child.body, child.prose, ...((child.bullets || []))]))
   ].map(htmlToText).filter(Boolean).join('\n');
   return `You are helping a reader explore an interpretive mindmap, but every answer must stay anchored to Anthropic's official Claude Mythos Preview framing.
+
+Source priority:
+${ANTHROPIC_SOURCE_STACK.map((item) => `- ${item}`).join('\n')}
 
 Official anchor facts:
 ${ANTHROPIC_MYTHOS_FACTS.map((fact) => `- ${fact}`).join('\n')}
@@ -719,7 +730,9 @@ ${nodeContext || '(No additional node text provided.)'}
 Task: Write a tight, educational deep-dive (220-360 words) that expands this specific node with concrete mechanisms, examples, tradeoffs, safeguards, and one or two open questions.
 
 Requirements:
-- Start with 1-2 sentences that explicitly connect this node to Anthropic's Claude Mythos Preview or Project Glasswing.
+- Start with 1-2 sentences that explicitly connect this node to Anthropic's Claude Mythos Preview, preferably through System Card facts before mentioning Project Glasswing.
+- Treat the Anthropic System Card as the source of truth for what Mythos is, what it can do, and why access is restricted.
+- Use Project Glasswing mainly for deployment context, partners, defensive use, and public framing.
 - Keep the explanation relevant to cyber defense, critical software, agentic coding, model autonomy, infrastructure risk, or human oversight.
 - If the node is more speculative, philosophical, or broader than Anthropic's official claims, say that clearly and reinterpret it through the Anthropic Mythos lens instead of inventing unsupported facts.
 - Do not turn Mythos into generic mythology, random sci-fi, or an omnipotent internet god unless you clearly mark that language as this page's interpretation.
