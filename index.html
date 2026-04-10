@@ -629,6 +629,7 @@ let secureProxyState = {
   note: 'Checking secure proxy availability…'
 };
 let removedStoredKey = false;
+let qaPanelRevealed = false;
 
 if(FORCED_MOBILE_MODE) document.body.classList.add('mobile-mode');
 if(qrLink) qrLink.href = MOBILE_REDIRECT_URL;
@@ -849,10 +850,13 @@ modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); })
 updateStatus();
 
 qaRevealBtn?.addEventListener('click', () => {
-  if(!qaPanel) return;
+  if(!qaPanel || qaPanelRevealed) return;
+  qaPanelRevealed = true;
   qaPanel.hidden = false;
-  qaGate?.setAttribute('hidden', '');
+  qaRevealBtn.disabled = true;
   qaRevealBtn.setAttribute('aria-expanded', 'true');
+  qaRevealBtn.blur();
+  qaGate?.remove();
   requestAnimationFrame(() => {
     qaPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     qaInput?.focus();
