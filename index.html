@@ -110,7 +110,10 @@
   .qa-reveal-btn{width:min(100%,440px);padding:11px 14px;border-radius:14px;border:1px solid rgba(124,156,255,.2);background:rgba(11,15,23,.55);color:#dde5ff;font:inherit;font-size:13px;line-height:1.45;letter-spacing:.01em;cursor:pointer;transition:border-color .15s ease, transform .15s ease, color .15s ease, background .15s ease;text-align:center;box-shadow:0 16px 40px -34px rgba(124,156,255,.45)}
   .qa-reveal-btn:hover{border-color:var(--accent);color:#fff;transform:translateY(-1px);background:rgba(124,156,255,.08)}
   .qa-reveal-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-  .qa-panel{margin:0 0 22px;padding:20px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(124,156,255,.08),rgba(255,255,255,.02));box-shadow:0 24px 70px -48px rgba(124,156,255,.45)}
+  .qa-panel{position:relative;margin:0 0 22px;padding:20px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(124,156,255,.08),rgba(255,255,255,.02));box-shadow:0 24px 70px -48px rgba(124,156,255,.45)}
+  .qa-close-btn{position:absolute;top:14px;right:14px;width:34px;height:34px;display:grid;place-items:center;border-radius:999px;border:1px solid rgba(124,156,255,.22);background:rgba(11,15,23,.72);color:#dce4ff;font:inherit;font-size:18px;line-height:1;cursor:pointer;transition:border-color .15s ease, background .15s ease, transform .15s ease}
+  .qa-close-btn:hover{border-color:var(--accent);background:rgba(124,156,255,.12);color:#fff;transform:translateY(-1px)}
+  .qa-close-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   .qa-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#d4dcff;margin-bottom:10px}
   .qa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,460px);gap:18px;align-items:start}
   .qa-title{margin:0 0 8px;font-size:clamp(20px,3vw,28px);line-height:1.15;color:#f2f5ff}
@@ -175,6 +178,7 @@
   body.mobile-mode .qa-reveal-btn{width:100%;min-height:52px;font-size:14px}
   body.mobile-mode .qa-grid{grid-template-columns:1fr}
   body.mobile-mode .qa-panel{padding:16px}
+  body.mobile-mode .qa-close-btn{top:12px;right:12px;width:36px;height:36px}
   body.mobile-mode .qa-form textarea{min-height:160px;font-size:16px}
   body.mobile-mode .toolbar{justify-content:stretch}
   body.mobile-mode .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:50px}
@@ -235,6 +239,7 @@
     </div>
 
     <section class="qa-panel" id="qaPanel" aria-labelledby="qaTitle" hidden>
+      <button class="qa-close-btn" id="qaCloseBtn" type="button" aria-label="Close source-grounded Q&A">×</button>
       <div class="qa-kicker">Source-grounded Q&amp;A</div>
       <div class="qa-grid">
         <div class="qa-copy">
@@ -609,6 +614,7 @@ const mobileBrowserNote = document.getElementById('mobileBrowserNote');
 const qaGate = document.getElementById('qaGate');
 const qaRevealBtn = document.getElementById('qaRevealBtn');
 const qaPanel = document.getElementById('qaPanel');
+const qaCloseBtn = document.getElementById('qaCloseBtn');
 const qaInput = document.getElementById('qaInput');
 const qaAskBtn = document.getElementById('askQa');
 const qaClearBtn = document.getElementById('clearQa');
@@ -849,19 +855,31 @@ modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); })
 
 updateStatus();
 
-qaRevealBtn?.addEventListener('click', () => {
+function openQaPanel(){
   if(!qaPanel || qaPanelRevealed) return;
   qaPanelRevealed = true;
   qaPanel.hidden = false;
-  qaRevealBtn.disabled = true;
-  qaRevealBtn.setAttribute('aria-expanded', 'true');
-  qaRevealBtn.blur();
-  qaGate?.remove();
+  if(qaGate) qaGate.hidden = true;
+  qaRevealBtn?.setAttribute('aria-expanded', 'true');
   requestAnimationFrame(() => {
     qaPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     qaInput?.focus();
   });
-});
+}
+
+function closeQaPanel(){
+  if(!qaPanel || !qaPanelRevealed) return;
+  qaPanelRevealed = false;
+  qaPanel.hidden = true;
+  if(qaGate) qaGate.hidden = false;
+  qaRevealBtn?.setAttribute('aria-expanded', 'false');
+  requestAnimationFrame(() => {
+    qaRevealBtn?.focus();
+  });
+}
+
+qaRevealBtn?.addEventListener('click', openQaPanel);
+qaCloseBtn?.addEventListener('click', closeQaPanel);
 
 qaAskBtn?.addEventListener('click', askSourceGroundedQuestion);
 qaClearBtn?.addEventListener('click', () => {
