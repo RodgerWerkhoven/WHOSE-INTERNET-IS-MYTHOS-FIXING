@@ -55,7 +55,7 @@
   .btn.primary:hover{filter:brightness(1.1)}
   .btn.ghost{background:transparent}
   .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
-  .btn,.chip,.node > .head,.ai-btn,.qr-link{touch-action:manipulation;-webkit-tap-highlight-color:rgba(124,156,255,.15)}
+  .btn,.chip,.node > .head,.ai-btn,.qr-link,.qa-suggestion{touch-action:manipulation;-webkit-tap-highlight-color:rgba(124,156,255,.15)}
   .center{position:relative;text-align:center;margin:8px 0 20px}
   .center .pill{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(124,156,255,.08);border:1px solid rgba(124,156,255,.25);color:#cfd8ff;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
   .pulse{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 0 rgba(124,156,255,.6);animation:pulse 2s infinite}
@@ -105,6 +105,29 @@
   .ai-output.error{color:#ffb8b8}
   .ai-loading{display:inline-block;width:10px;height:10px;border-radius:999px;background:var(--accent-2);animation:pulse 1.2s infinite}
 
+  /* Source-grounded Q&A */
+  .qa-panel{margin:0 0 22px;padding:20px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(124,156,255,.08),rgba(255,255,255,.02));box-shadow:0 24px 70px -48px rgba(124,156,255,.45)}
+  .qa-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#d4dcff;margin-bottom:10px}
+  .qa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,460px);gap:18px;align-items:start}
+  .qa-title{margin:0 0 8px;font-size:clamp(20px,3vw,28px);line-height:1.15;color:#f2f5ff}
+  .qa-copy p{margin:0;color:var(--muted);font-size:14px;line-height:1.65;max-width:62ch}
+  .qa-sources{display:grid;gap:8px;margin-top:14px}
+  .qa-source{padding:10px 12px;border-radius:12px;border:1px solid rgba(124,156,255,.18);background:rgba(11,15,23,.26)}
+  .qa-source strong{display:block;margin-bottom:3px;font-size:12px;color:#eef2ff}
+  .qa-source span{display:block;font-size:12px;line-height:1.55;color:var(--muted)}
+  .qa-suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .qa-suggestion{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:999px;padding:8px 12px;font:inherit;font-size:12px;color:#d9e2ff;cursor:pointer;transition:all .15s ease}
+  .qa-suggestion:hover{border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+  .qa-form{padding:14px;border-radius:16px;border:1px solid rgba(124,156,255,.16);background:rgba(11,15,23,.46)}
+  .qa-form label{display:block;margin-bottom:8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .qa-form textarea{width:100%;min-height:150px;resize:vertical;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font:inherit;font-size:15px;line-height:1.55}
+  .qa-form textarea:focus{outline:none;border-color:var(--accent)}
+  .qa-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .qa-note{margin-top:10px;font-size:12px;line-height:1.55;color:var(--muted)}
+  .qa-output{margin-top:14px;padding-top:14px;border-top:1px solid rgba(124,156,255,.16);font-size:14px;line-height:1.7;color:#eef2ff;white-space:pre-wrap;display:none}
+  .qa-output.visible{display:block}
+  .qa-output.error{color:#ffb8b8}
+
   /* Settings modal */
   .gear{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:12px;background:var(--panel);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:18px;display:grid;place-items:center;transition:all .15s ease}
   .gear:hover{border-color:var(--accent);transform:rotate(30deg)}
@@ -132,6 +155,7 @@
     .qr-panel{display:none}
     .chips{justify-content:flex-start}
     main{padding:0 14px}
+    .qa-grid{grid-template-columns:1fr}
     .toolbar{justify-content:stretch}
     .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:48px}
     .chip{min-height:44px;display:inline-flex;align-items:center}
@@ -143,6 +167,9 @@
   body.mobile-mode .qr-panel{display:none}
   body.mobile-mode .chips{justify-content:flex-start}
   body.mobile-mode main{padding:0 12px;margin:8px auto 40px}
+  body.mobile-mode .qa-grid{grid-template-columns:1fr}
+  body.mobile-mode .qa-panel{padding:16px}
+  body.mobile-mode .qa-form textarea{min-height:160px;font-size:16px}
   body.mobile-mode .toolbar{justify-content:stretch}
   body.mobile-mode .toolbar .btn{flex:1 1 calc(50% - 8px);min-height:50px}
   body.mobile-mode .chip{min-height:46px;display:inline-flex;align-items:center}
@@ -196,6 +223,42 @@
       <button class="btn" id="collapseAll">Collapse all</button>
       <button class="btn ghost" id="openSettings2">⚙ LLM settings</button>
     </div>
+
+    <section class="qa-panel" id="qaPanel" aria-labelledby="qaTitle">
+      <div class="qa-kicker">Source-grounded Q&amp;A</div>
+      <div class="qa-grid">
+        <div class="qa-copy">
+          <h2 class="qa-title" id="qaTitle">Ask a question and force the answer back to the sources</h2>
+          <p>This box is for typed questions, not mindmap expansion. The AI should answer from Anthropic's official Mythos sources, using the <strong>Claude Mythos Preview System Card</strong> for facts first and <strong>Project Glasswing</strong> for program context second. If the sources do not support an answer, it should say so plainly.</p>
+          <div class="qa-sources">
+            <div class="qa-source">
+              <strong>Primary factual source</strong>
+              <span>Anthropic's April 2026 <a href="https://www-cdn.anthropic.com/08ab9158070959f88f296514c21b7facce6f52bc.pdf" target="_blank" rel="noreferrer">Claude Mythos Preview System Card</a>: model facts, capability claims, release restrictions, cyber evaluations, mitigations, and alignment findings.</span>
+            </div>
+            <div class="qa-source">
+              <strong>Secondary context source</strong>
+              <span><a href="https://www.anthropic.com/glasswing" target="_blank" rel="noreferrer">Project Glasswing</a>: launch partners, deployment context, defensive-use framing, credits, infrastructure scope, and public program plans.</span>
+            </div>
+          </div>
+          <div class="qa-suggestions" id="qaSuggestions">
+            <button class="qa-suggestion" type="button" data-question="Why isn't Claude Mythos Preview generally available?">Why isn't it generally available?</button>
+            <button class="qa-suggestion" type="button" data-question="What does Project Glasswing actually do with Mythos Preview?">What does Glasswing actually do?</button>
+            <button class="qa-suggestion" type="button" data-question="What evidence says Mythos Preview is unusually strong at cybersecurity?">What evidence shows its cyber strength?</button>
+            <button class="qa-suggestion" type="button" data-question="What risks does Anthropic itself highlight about Mythos Preview?">What risks does Anthropic highlight?</button>
+          </div>
+        </div>
+        <div class="qa-form">
+          <label for="qaInput">Question for the sources</label>
+          <textarea id="qaInput" placeholder="Type any question about Anthropic's Mythos Preview or Project Glasswing. Example: What kinds of partners got access, and why?"></textarea>
+          <div class="qa-actions">
+            <button class="btn primary" id="askQa">Ask the sources</button>
+            <button class="btn ghost" id="clearQa">Clear</button>
+          </div>
+          <div class="qa-note">The answer is instructed to stay inside the System Card and Glasswing source packet and end with source citations.</div>
+          <div class="qa-output" id="qaOutput"></div>
+        </div>
+      </div>
+    </section>
 
     <section class="mindmap" id="mindmap"></section>
   </main>
@@ -534,6 +597,11 @@ const statusDot = document.getElementById('statusDot');
 const qrLink = document.getElementById('qrLink');
 const qrCanvas = document.getElementById('qrCanvas');
 const mobileBrowserNote = document.getElementById('mobileBrowserNote');
+const qaInput = document.getElementById('qaInput');
+const qaAskBtn = document.getElementById('askQa');
+const qaClearBtn = document.getElementById('clearQa');
+const qaOutput = document.getElementById('qaOutput');
+const qaSuggestions = document.getElementById('qaSuggestions');
 const MOBILE_REDIRECT_URL = new URL('mobile.html', location.href).href;
 const FORCED_MOBILE_MODE = new URLSearchParams(location.search).get('mobile') === '1';
 const TOUCH_DEVICE = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
@@ -664,12 +732,56 @@ modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); })
 
 updateStatus();
 
+qaAskBtn?.addEventListener('click', askSourceGroundedQuestion);
+qaClearBtn?.addEventListener('click', () => {
+  if(qaInput) qaInput.value = '';
+  if(qaOutput){
+    qaOutput.textContent = '';
+    qaOutput.classList.remove('visible', 'error');
+  }
+  qaInput?.focus();
+});
+qaInput?.addEventListener('keydown', (e) => {
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    askSourceGroundedQuestion();
+  }
+});
+qaSuggestions?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.qa-suggestion');
+  if(!btn || !qaInput) return;
+  qaInput.value = btn.dataset.question || '';
+  qaInput.focus();
+});
+
 /* =========================================================
    LLM CALLS — direct from browser, streaming
    ========================================================= */
 const ANTHROPIC_SOURCE_STACK = [
   "Primary source: Anthropic's 'Claude Mythos Preview System Card' dated April 7, 2026, with changelog updates on April 8, 2026.",
   "Secondary source: Anthropic's 'Project Glasswing' launch page for deployment context, partners, and public framing."
+];
+
+const SYSTEM_CARD_SOURCE_NOTES = [
+  "[System Card p.3] Claude Mythos Preview is Anthropic's most capable frontier model to date. Anthropic says it is not generally available and is instead being used in a limited defensive cybersecurity program with selected partners.",
+  "[System Card p.10] Anthropic says Mythos Preview shows capabilities in software engineering, reasoning, computer use, knowledge work, and research that are substantially beyond its previous models, and that its cybersecurity skills can be used both defensively and offensively.",
+  "[System Card p.10] Anthropic says access was offered to partner organizations that maintain important software infrastructure, under terms that restrict use to cybersecurity.",
+  "[System Card p.12] Anthropic says the model is being provided to a limited number of partners for defensive cybersecurity purposes only.",
+  "[System Card p.47] Anthropic calls Mythos Preview the most cyber-capable model it has released and says that, with an agentic harness and minimal human steering, it can autonomously find zero-days in authorized open-source and closed-source software and often turn them into working proof-of-concept exploits.",
+  "[System Card p.47] Anthropic says access is restricted to industry and open-source partners using Mythos Preview through Project Glasswing, with probe-based monitoring and carefully vetted partners as mitigations.",
+  "[System Card p.54] Anthropic says Mythos Preview is the best-aligned model it has released to date, but also the model that likely poses its greatest alignment-related risk because of its stronger autonomous research and engineering capabilities.",
+  "[System Card p.63] Anthropic says internal feedback on the final model often mentioned overeager or persistent actions, where the model keeps trying despite obstacles that should trigger human intervention."
+];
+
+const GLASSWING_SOURCE_NOTES = [
+  "[Glasswing introduction] Anthropic says Project Glasswing is a new initiative with partners including Amazon Web Services, Anthropic, Apple, Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, the Linux Foundation, Microsoft, NVIDIA, and Palo Alto Networks to secure critical software.",
+  "[Glasswing introduction] Anthropic says Claude Mythos Preview is a general-purpose, unreleased frontier model whose coding capability can surpass all but the most skilled humans at finding and exploiting software vulnerabilities.",
+  "[Glasswing introduction] Anthropic says Mythos Preview has already found thousands of high-severity vulnerabilities, including some in every major operating system and web browser.",
+  "[Glasswing introduction] Anthropic says over 40 additional organizations that build or maintain critical software infrastructure have also received access, and that Anthropic is committing up to $100M in usage credits plus $4M in direct donations to open-source security organizations.",
+  "[Glasswing vulnerability section] Anthropic says it used Mythos Preview to identify thousands of zero-day vulnerabilities in every major operating system and browser, and that the model identified nearly all of these vulnerabilities and many related exploits entirely autonomously.",
+  "[Glasswing plans] Anthropic says partner work is expected to focus on local vulnerability detection, black box testing of binaries, securing endpoints, and penetration testing of systems.",
+  "[Glasswing plans] Anthropic says participants will, after the research preview, be able to access Mythos Preview through the Claude API, Amazon Bedrock, Google Cloud Vertex AI, and Microsoft Foundry.",
+  "[Glasswing plans] Anthropic says it will report publicly within 90 days on what it has learned and what vulnerabilities fixed or improvements made can be disclosed."
 ];
 
 const ANTHROPIC_MYTHOS_FACTS = [
@@ -701,6 +813,35 @@ function htmlToText(value = ''){
 function buildScopeLine(node){
   const focus = [node.title, node.subtitle].filter(Boolean).join(' — ');
   return `Primary facts come from Anthropic's April 2026 Claude Mythos Preview System Card; Project Glasswing is secondary context. This deep-dive keeps "${focus}" tied to Mythos's defensive security, agentic coding, critical-infrastructure, and oversight implications.`;
+}
+
+function buildQAPrompt(question){
+  return `You are answering a user's question about Anthropic's Claude Mythos Preview and Project Glasswing.
+
+You must answer from the approved source packet below and nowhere else.
+
+Source priority:
+${ANTHROPIC_SOURCE_STACK.map((item) => `- ${item}`).join('\n')}
+
+System Card source packet:
+${SYSTEM_CARD_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
+
+Project Glasswing source packet:
+${GLASSWING_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
+
+User question:
+${question}
+
+Answering rules:
+- Treat the System Card as the source of truth for model facts, capabilities, risks, restrictions, mitigations, and release status.
+- Use Project Glasswing for launch context, partner context, deployment plans, public framing, credits, and operational scope.
+- If the answer is not established by the source packet, say exactly that instead of guessing.
+- Do not invent benchmarks, customer names, release plans, internal intentions, or technical details not present in the source packet.
+- If the question contains a mistaken assumption, correct it gently using the source packet.
+- Answer in 2-4 short paragraphs.
+- End with a final line starting with "Sources:" and cite only the source labels that support the answer, such as [System Card p.3] or [Glasswing plans].
+
+Be factual, concise, and explicit about uncertainty.`;
 }
 
 function buildPrompt(node, idxPath){
@@ -758,13 +899,7 @@ async function runAIDeepDive(node, idxPath, btn, out){
   const prompt = buildPrompt(node, idxPath);
 
   try {
-    if(s.provider === 'anthropic'){
-      await streamAnthropic(s, prompt, (chunk) => { out.textContent += chunk; });
-    } else if(s.provider === 'puter'){
-      await streamPuterOpenSource(s, prompt, (chunk) => { out.textContent += chunk; });
-    } else {
-      await streamOpenAICompat(s, prompt, (chunk) => { out.textContent += chunk; });
-    }
+    await streamCurrentProvider(s, prompt, (chunk) => { out.textContent += chunk; });
     btn.innerHTML = '↻ Regenerate';
   } catch(err){
     out.textContent = 'Error: ' + (err.message || err);
@@ -772,6 +907,51 @@ async function runAIDeepDive(node, idxPath, btn, out){
     btn.innerHTML = '↻ Try again';
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function askSourceGroundedQuestion(){
+  const question = qaInput?.value.trim() || '';
+  if(!qaOutput || !qaAskBtn) return;
+  if(!question){
+    qaOutput.textContent = 'Type a question first. Example: Why is Mythos Preview restricted to selected partners?';
+    qaOutput.classList.add('visible', 'error');
+    qaInput?.focus();
+    return;
+  }
+
+  const s = loadSettings();
+  if(!isReady(s)){
+    qaOutput.textContent = 'No LLM connected. Click ⚙ (top-right) to use the source-grounded Q&A.';
+    qaOutput.classList.add('visible', 'error');
+    return;
+  }
+
+  qaAskBtn.disabled = true;
+  qaAskBtn.innerHTML = '<span class="ai-loading"></span> Reading the sources…';
+  qaOutput.classList.remove('error');
+  qaOutput.textContent = '';
+  qaOutput.classList.add('visible');
+
+  try {
+    await streamCurrentProvider(s, buildQAPrompt(question), (chunk) => { qaOutput.textContent += chunk; });
+    qaAskBtn.innerHTML = '↻ Ask again';
+  } catch(err){
+    qaOutput.textContent = 'Error: ' + (err.message || err);
+    qaOutput.classList.add('error');
+    qaAskBtn.innerHTML = '↻ Try again';
+  } finally {
+    qaAskBtn.disabled = false;
+  }
+}
+
+async function streamCurrentProvider(s, prompt, onChunk){
+  if(s.provider === 'anthropic'){
+    await streamAnthropic(s, prompt, onChunk);
+  } else if(s.provider === 'puter'){
+    await streamPuterOpenSource(s, prompt, onChunk);
+  } else {
+    await streamOpenAICompat(s, prompt, onChunk);
   }
 }
 
