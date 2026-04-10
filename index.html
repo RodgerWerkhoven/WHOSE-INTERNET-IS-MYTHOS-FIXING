@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0f17" />
 <title>WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS</title>
-<meta name="description" content="WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS — an interactive Mythos explainer with free browser-based AI deep-dives, plus a touch-first mobile version." />
+<meta name="description" content="WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS — an interactive Anthropic Mythos explainer with free browser-based AI deep-dives, plus a touch-first mobile version." />
 <style>
   :root{
     --bg:#0b0f17;
@@ -96,6 +96,8 @@
 
   /* AI deep-dive */
   .ai-box{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:rgba(167,139,250,.05)}
+  .ai-scope{margin-bottom:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(124,156,255,.18);background:rgba(124,156,255,.08);color:#dce3ff;font-size:12px;line-height:1.55}
+  .ai-scope strong{color:#f2f5ff}
   .ai-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .ai-row .hint{color:var(--muted);font-size:12px}
   .ai-output{margin-top:10px;font-size:14px;line-height:1.6;color:#e8ecff;white-space:pre-wrap;display:none}
@@ -163,7 +165,7 @@
         <div class="eyebrow">WHOSE INTERNET IS MYTHOS FIXING?</div>
         <h1>WHOSE INTERNET IS MYTHOS FIXING?</h1>
         <div class="byline">by Rodger Werkhoven from <a href="https://anotherdimension.rocks" target="_blank" rel="noreferrer">ANÓTHERDIMENSION.ROCKS</a></div>
-        <p class="lead">An educational, click-to-explore breakdown of <strong>Mythos</strong> — an autonomous layer taking architectural control of global digital infrastructure, and the human interactions it shapes. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
+        <p class="lead">An educational, click-to-explore interpretation of <strong>Anthropic's Claude Mythos Preview</strong> and Project Glasswing, reading each branch through cyber defense, infrastructure control, human oversight, and the wider systems it could reshape. Free AI deep-dives now default to an online open-source LLM that runs straight from the browser.</p>
         <div class="mobile-browser-note" id="mobileBrowserNote" hidden>Touch-first mobile mode works everywhere, but it feels best in Chrome on phones.</div>
       </div>
       <aside class="qr-panel" aria-label="Mobile QR code">
@@ -186,7 +188,7 @@
 
   <main>
     <div class="center">
-      <span class="pill"><span class="pulse"></span> Mythos — The Architecture of Autonomous Infrastructure Control</span>
+      <span class="pill"><span class="pulse"></span> Anthropic's Claude Mythos Preview / Project Glasswing lens</span>
     </div>
 
     <div class="toolbar">
@@ -200,7 +202,7 @@
 
   <footer>
     by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS<br/>
-    <span class="src">Source lens: Mythos — The Architecture of Autonomous Infrastructure Control</span>
+    <span class="src">Source lens: Anthropic's Claude Mythos Preview / Project Glasswing, interpreted through this Mythos map</span>
   </footer>
 
   <!-- Settings modal -->
@@ -466,9 +468,10 @@ function renderNode(node, depth=0, idxPath=[]){
   const ai = document.createElement('div');
   ai.className = 'ai-box';
   ai.innerHTML = `
+    <div class="ai-scope"><strong>Anthropic Mythos lens:</strong> ${escapeHtml(buildScopeLine(node))}</div>
     <div class="ai-row">
-      <button class="btn primary ai-btn">✨ Explore deeper with AI</button>
-      <span class="hint">Uses your connected LLM. Click once to expand this branch further.</span>
+      <button class="btn primary ai-btn">✨ Explore Anthropic Mythos deeper</button>
+      <span class="hint">Starts from Claude Mythos Preview in Project Glasswing, then expands this node through that lens.</span>
     </div>
     <div class="ai-output"></div>
   `;
@@ -664,18 +667,66 @@ updateStatus();
 /* =========================================================
    LLM CALLS — direct from browser, streaming
    ========================================================= */
+const ANTHROPIC_MYTHOS_FACTS = [
+  "Claude Mythos Preview is Anthropic's unreleased frontier model presented under Project Glasswing.",
+  "Anthropic describes it as a general-purpose model with unusually strong cybersecurity, agentic coding, reasoning, and vulnerability-finding/exploitation capabilities.",
+  "Project Glasswing is about deploying these capabilities for defensive security work on critical software and infrastructure.",
+  "If this page becomes more metaphorical or speculative than Anthropic's official framing, that shift must be labeled as interpretation rather than fact."
+];
+
+function escapeHtml(value = ''){
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  })[char]);
+}
+
+function htmlToText(value = ''){
+  const tmp = document.createElement('div');
+  tmp.innerHTML = value;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+function buildScopeLine(node){
+  const focus = [node.title, node.subtitle].filter(Boolean).join(' — ');
+  return `Claude Mythos Preview is Anthropic's Project Glasswing cyber model. This deep-dive keeps "${focus}" tied to its defensive security, agentic coding, critical-infrastructure, and oversight implications.`;
+}
+
 function buildPrompt(node, idxPath){
   const path = idxPath.join('.') + ' ' + node.title;
   const sub = node.subtitle ? ` — ${node.subtitle}` : '';
-  return `You are helping a reader explore a mindmap about "Mythos: The Architecture of Autonomous Infrastructure Control" — an autonomous AI control layer over global digital infrastructure.
+  const nodeContext = [
+    node.body,
+    node.prose,
+    ...(node.bullets || []),
+    ...((node.children || []).flatMap((child) => [child.title, child.subtitle, child.body, child.prose, ...((child.bullets || []))]))
+  ].map(htmlToText).filter(Boolean).join('\n');
+  return `You are helping a reader explore an interpretive mindmap, but every answer must stay anchored to Anthropic's official Claude Mythos Preview framing.
 
-The reader clicked "Explore deeper" on this node:
+Official anchor facts:
+${ANTHROPIC_MYTHOS_FACTS.map((fact) => `- ${fact}`).join('\n')}
+
+The reader clicked "Explore Anthropic Mythos deeper" on this node:
 
 ${path}${sub}
 
-${node.body || node.prose || ''}
+Node text from the page:
+${nodeContext || '(No additional node text provided.)'}
 
-Task: Write a tight, educational deep-dive (250-400 words) that expands this specific node with concrete mechanisms, examples, tradeoffs, and one or two open questions. Use clear paragraphs. Do not restate the node title. Do not use markdown headers. Be specific and thoughtful, not generic.`;
+Task: Write a tight, educational deep-dive (220-360 words) that expands this specific node with concrete mechanisms, examples, tradeoffs, safeguards, and one or two open questions.
+
+Requirements:
+- Start with 1-2 sentences that explicitly connect this node to Anthropic's Claude Mythos Preview or Project Glasswing.
+- Keep the explanation relevant to cyber defense, critical software, agentic coding, model autonomy, infrastructure risk, or human oversight.
+- If the node is more speculative, philosophical, or broader than Anthropic's official claims, say that clearly and reinterpret it through the Anthropic Mythos lens instead of inventing unsupported facts.
+- Do not turn Mythos into generic mythology, random sci-fi, or an omnipotent internet god unless you clearly mark that language as this page's interpretation.
+- Do not invent release details, customers, benchmarks, or capabilities beyond the anchor facts and the supplied node text.
+- Use clear paragraphs only. No markdown headers or bullet lists. Do not restate the node title as an opening line.
+
+Be specific, restrained, and relevant rather than generic or hypey.`;
 }
 
 async function runAIDeepDive(node, idxPath, btn, out){
