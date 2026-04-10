@@ -1003,6 +1003,7 @@ Answering rules:
 - If the source packets are enough, answer only from them and cite only those source labels.
 - If the source packets are not enough, use the internet fallback packet and say explicitly in the first sentence that you could not answer this fully from the approved source packets alone and that the answer below uses internet search results.
 - If the question is about Rodger Werkhoven beyond the page byline, answer only what is supported by the internet fallback packet and do not infer a broader biography.
+- Put each short, source-anchored factual proposition that carries the main information in double quotation marks before you unpack or explain it.
 - When using the internet fallback packet, cite only the relevant [Internet N] labels for those claims.
 - If neither the official sources nor the internet fallback packet answer the question, say that clearly instead of guessing.
 - Do not invent benchmarks, customer names, release plans, internal intentions, or technical details not present in the source packet.
@@ -1013,7 +1014,14 @@ Answering rules:
 Be factual, concise, and explicit about uncertainty.`;
 }
 
+function isOriginDiscoveryNode(node, idxPath){
+  return node?.id === 'origin'
+    || /^origin and discovery$/i.test(node?.title || '')
+    || (Array.isArray(idxPath) && idxPath.length === 1 && idxPath[0] === 1);
+}
+
 function buildPrompt(node, idxPath){
+  const originDiscoveryNode = isOriginDiscoveryNode(node, idxPath);
   const path = idxPath.join('.') + ' ' + node.title;
   const sub = node.subtitle ? ` — ${node.subtitle}` : '';
   const nodeContext = [
@@ -1022,6 +1030,12 @@ function buildPrompt(node, idxPath){
     ...(node.bullets || []),
     ...((node.children || []).flatMap((child) => [child.title, child.subtitle, child.body, child.prose, ...((child.bullets || []))]))
   ].map(htmlToText).filter(Boolean).join('\n');
+  const openingRule = originDiscoveryNode
+    ? '- Because this is the first block, include only once here the idea that Anthropic says Mythos Preview can autonomously find zero-days and often turn them into proof-of-concept exploits with minimal human steering.'
+    : '- Do not repeat the stock Mythos capability opener about autonomously finding zero-days, proof-of-concept exploits, or minimal human steering; that framing belongs only in the first block, "Origin and Discovery".';
+  const connectionRule = originDiscoveryNode
+    ? '- Start with 1-2 sentences that connect this first block to Anthropic\'s Claude Mythos Preview and its discovery context.'
+    : '- Connect this node to Anthropic\'s Claude Mythos Preview within the first paragraph, but do not open with a generic summary line; go straight to this node\'s specific angle.';
   return `You are helping a reader explore an interpretive mindmap, but every answer must stay anchored to Anthropic's official Claude Mythos Preview framing.
 
 Source priority:
@@ -1040,13 +1054,15 @@ ${nodeContext || '(No additional node text provided.)'}
 Task: Write a tight, educational deep-dive (220-360 words) that expands this specific node with concrete mechanisms, examples, tradeoffs, safeguards, and one or two open questions.
 
 Requirements:
-- Start with 1-2 sentences that explicitly connect this node to Anthropic's Claude Mythos Preview, preferably through System Card facts before mentioning Project Glasswing.
+${connectionRule}
+${openingRule}
 - Treat the Anthropic System Card as the source of truth for what Mythos is, what it can do, and why access is restricted.
 - Use Project Glasswing mainly for deployment context, partners, defensive use, and public framing.
 - Keep the explanation relevant to cyber defense, critical software, agentic coding, model autonomy, infrastructure risk, or human oversight.
 - If the node is more speculative, philosophical, or broader than Anthropic's official claims, say that clearly and reinterpret it through the Anthropic Mythos lens instead of inventing unsupported facts.
 - Do not turn Mythos into generic mythology, random sci-fi, or an omnipotent internet god unless you clearly mark that language as this page's interpretation.
 - Do not invent release details, customers, benchmarks, or capabilities beyond the anchor facts and the supplied node text.
+- Put each short, source-anchored factual proposition that carries the main information in double quotation marks before you unpack or explain it.
 - Use clear paragraphs only. No markdown headers or bullet lists. Do not restate the node title as an opening line.
 
 Be specific, restrained, and relevant rather than generic or hypey.`;
