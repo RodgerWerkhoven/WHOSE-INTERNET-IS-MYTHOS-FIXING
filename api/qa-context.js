@@ -1,8 +1,8 @@
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 25;
 const MAX_BODY_BYTES = 32 * 1024;
-const SEARCH_RESULT_FETCH_LIMIT = 6;
-const SEARCH_RESULT_RETURN_LIMIT = 4;
+const SEARCH_RESULT_FETCH_LIMIT = 12;
+const SEARCH_RESULT_RETURN_LIMIT = 6;
 const MIN_RELEVANCE_SCORE = 8;
 const QUESTION_STOP_WORDS = new Set([
   'about', 'after', 'again', 'all', 'also', 'and', 'any', 'are', 'because', 'been', 'before',
@@ -14,6 +14,10 @@ const QUESTION_STOP_WORDS = new Set([
 ]);
 const TRUSTED_MEDIA_DOMAINS = new Set([
   'techcrunch.com',
+  'infoq.com',
+  'fortune.com',
+  'arstechnica.com',
+  'axios.com',
   'thehackernews.com',
   'cnbc.com',
   'reuters.com',
@@ -22,7 +26,11 @@ const TRUSTED_MEDIA_DOMAINS = new Set([
   'infosecurity-magazine.com',
   'gadgets360.com',
   'understandingai.org',
-  'simonwillison.net'
+  'simonwillison.net',
+  'futureoflife.org',
+  'nickbostrom.com',
+  'ynharari.com',
+  'theguardian.com'
 ]);
 const TRUSTED_CREATOR_DOMAINS = new Set([
   'anotherdimension.rocks',
@@ -41,11 +49,21 @@ const MYTHOS_DIRECT_SOURCES = [
   { title: 'Claude Mythos Preview \\ red.anthropic.com', link: 'https://red.anthropic.com/2026/mythos-preview/' },
   { title: 'Project Glasswing: Securing critical software for the AI era \\ Anthropic', link: 'https://www.anthropic.com/glasswing' },
   { title: 'Claude Mythos Preview System Card \\ Anthropic', link: 'https://www.anthropic.com/claude-mythos-preview-system-card' },
+  { title: 'Fortune: Anthropic left details of an unreleased Mythos model in a public database', link: 'https://fortune.com/2026/03/26/anthropic-says-testing-mythos-powerful-new-ai-model-after-data-leak-reveals-its-existence-step-change-in-capabilities/' },
+  { title: 'Fortune: Anthropic leaks Claude Code source after Mythos disclosure', link: 'https://fortune.com/2026/03/31/anthropic-source-code-claude-code-data-leak-second-security-lapse-days-after-accidentally-revealing-mythos/' },
+  { title: 'InfoQ: Anthropic Accidentally Exposes Claude Code Source via npm Source Map File', link: 'https://www.infoq.com/news/2026/04/claude-code-source-leak/' },
+  { title: 'TechCrunch: Anthropic took down thousands of GitHub repos trying to yank its leaked source code', link: 'https://techcrunch.com/2026/04/01/anthropic-took-down-thousands-of-github-repos-trying-to-yank-its-leaked-source-code-a-move-the-company-says-was-an-accident/' },
+  { title: 'Ars Technica: Anthropic says its DMCA effort unintentionally hit legitimate GitHub forks', link: 'https://arstechnica.com/ai/2026/04/anthropic-says-its-leak-focused-dmca-effort-unintentionally-hit-legit-github-forks/' },
+  { title: 'Axios: scrutiny after Anthropic source leaks', link: 'https://www.axios.com/2026/04/02/gottheimer-anthropic-source-code-leaks' },
   { title: 'Anthropic debuts preview of powerful new AI model Mythos', link: 'https://techcrunch.com/2026/04/07/anthropic-mythos-ai-model-preview-security/' },
   { title: 'Anthropic limits rollout of Mythos AI model over cyberattack fears - CNBC', link: 'https://www.cnbc.com/2026/04/07/anthropic-claude-mythos-ai-hackers-cyberattacks.html' },
   { title: 'Why Anthropic will not release Mythos Preview to the public - NBC News', link: 'https://www.nbcnews.com/tech/security/anthropic-project-glasswing-mythos-preview-claude-gets-limited-release-rcna267234' },
   { title: 'Anthropic’s Project Glasswing sounds necessary - Simon Willison', link: 'https://simonwillison.net/2026/Apr/7/project-glasswing/' },
-  { title: 'Anthropic Teams Up With Its Rivals to Keep AI From Hacking Everything | WIRED', link: 'https://www.wired.com/story/anthropic-mythos-preview-project-glasswing/' }
+  { title: 'Anthropic Teams Up With Its Rivals to Keep AI From Hacking Everything | WIRED', link: 'https://www.wired.com/story/anthropic-mythos-preview-project-glasswing/' },
+  { title: 'Life 3.0 - Future of Life Institute', link: 'https://futureoflife.org/resource/life-3-0-being-human-in-the-age-of-artificial-intelligence/' },
+  { title: 'Nick Bostrom home page', link: 'https://nickbostrom.com/' },
+  { title: 'The Superintelligent Will - Nick Bostrom', link: 'https://nickbostrom.com/superintelligentwill.pdf' },
+  { title: 'NEXUS by Yuval Noah Harari', link: 'https://www.ynharari.com/book/nexus/' }
 ];
 const CREATOR_DIRECT_SOURCES = [
   { title: 'ANOTHER DIMENSION', link: 'https://anotherdimension.rocks/' },
@@ -177,6 +195,22 @@ function buildSearchQueries(question){
     queries.unshift(`${cleanQuestion} site:red.anthropic.com Anthropic Mythos`);
   }
 
+  if(/\b(leak|leaked|source map|github|dmca|takedown|npm|cache|public database|claude code)\b/i.test(cleanQuestion)){
+    queries.unshift(
+      `${cleanQuestion} Anthropic Claude Code leak GitHub`,
+      `${cleanQuestion} Anthropic public database Mythos`,
+      `${cleanQuestion} Anthropic source map`
+    );
+  }
+
+  if(/\b(skynet|life 3\.0|tegmark|bostrom|superintelligence|harari|nexus)\b/i.test(cleanQuestion)){
+    queries.push(
+      `${cleanQuestion} Mythos comparison`,
+      `${cleanQuestion} AI governance`,
+      `${cleanQuestion} official book`
+    );
+  }
+
   if(!/\bmythos\b/i.test(cleanQuestion)){
     queries.push(`${cleanQuestion} Anthropic "Claude Mythos Preview"`);
   }
@@ -296,9 +330,12 @@ function extractExcerpt(html){
   return [meta, body].filter(Boolean).join(' ').slice(0, 1400).trim();
 }
 
-function measureResultRelevance(result, questionTerms, scope){
+function measureResultRelevance(result, questionTerms, scope, question = ''){
   const hostname = getHostname(result.link);
   const combined = `${result.title} ${result.description || ''} ${result.excerpt || ''} ${result.link}`.toLowerCase();
+  const questionLower = question.toLowerCase();
+  const isLeakQuestion = /\b(leak|leaked|source map|github|dmca|takedown|npm|cache|public database|claude code)\b/.test(questionLower);
+  const isScifiQuestion = /\b(skynet|life 3\.0|tegmark|bostrom|superintelligence|harari|nexus)\b/.test(questionLower);
   let score = 0;
 
   if(scope.mythos){
@@ -311,6 +348,46 @@ function measureResultRelevance(result, questionTerms, scope){
     if(combined.includes('glasswing')) score += 5;
     if(combined.includes('anthropic')) score += 4;
     if(combined.includes('preview')) score += 1;
+
+    if(isLeakQuestion){
+      const hasLeakSignals = combined.includes('claude code')
+        || combined.includes('source map')
+        || combined.includes('github')
+        || combined.includes('dmca')
+        || combined.includes('takedown')
+        || combined.includes('public database')
+        || combined.includes('data cache')
+        || combined.includes('leak');
+      if(combined.includes('claude code')) score += 8;
+      if(combined.includes('source map')) score += 8;
+      if(combined.includes('github')) score += 5;
+      if(combined.includes('dmca') || combined.includes('takedown')) score += 6;
+      if(combined.includes('public database') || combined.includes('data cache')) score += 7;
+      if(['fortune.com','infoq.com','techcrunch.com','arstechnica.com','axios.com'].includes(hostname)) score += 8;
+      if(!hasLeakSignals) score -= 8;
+      if(!hostname.endsWith('anthropic.com') && !TRUSTED_MEDIA_DOMAINS.has(hostname)) score -= 4;
+    }
+
+    if(isScifiQuestion){
+      const hasScifiSignals = combined.includes('skynet')
+        || combined.includes('life 3.0')
+        || combined.includes('life 30')
+        || combined.includes('tegmark')
+        || combined.includes('bostrom')
+        || combined.includes('superintelligence')
+        || combined.includes('harari')
+        || combined.includes('nexus');
+      if(combined.includes('skynet')) score += 8;
+      if(combined.includes('life 3.0') || combined.includes('life 30')) score += 8;
+      if(combined.includes('tegmark')) score += 7;
+      if(combined.includes('bostrom')) score += 7;
+      if(combined.includes('superintelligence')) score += 8;
+      if(combined.includes('harari')) score += 7;
+      if(combined.includes('nexus')) score += 7;
+      if(['futureoflife.org','nickbostrom.com','ynharari.com','theguardian.com'].includes(hostname)) score += 8;
+      if(!hasScifiSignals) score -= 8;
+      if(!hostname.endsWith('anthropic.com') && !TRUSTED_MEDIA_DOMAINS.has(hostname)) score -= 4;
+    }
   }
 
   if(scope.creator){
@@ -339,7 +416,7 @@ function measureResultRelevance(result, questionTerms, scope){
   }
 
   if(termHits === 0) score -= 5;
-  if(scope.mythos && !combined.includes('anthropic') && !combined.includes('mythos') && !combined.includes('glasswing')) score -= 10;
+  if(scope.mythos && !isLeakQuestion && !isScifiQuestion && !combined.includes('anthropic') && !combined.includes('mythos') && !combined.includes('glasswing')) score -= 10;
   if(scope.creator && !combined.includes('rodger') && !combined.includes('werkhoven') && !combined.includes('anotherdimension')) score -= 12;
 
   return { score, termHits };
@@ -390,7 +467,7 @@ async function searchInternet(question){
         const key = normalizeLink(item.link);
         if(!key || candidateMap.has(key)) continue;
 
-        const baseRelevance = measureResultRelevance(item, questionTerms, scope);
+        const baseRelevance = measureResultRelevance(item, questionTerms, scope, question);
         if(baseRelevance.score < 3) continue;
 
         candidateMap.set(key, {
@@ -409,7 +486,7 @@ async function searchInternet(question){
     const key = normalizeLink(item.link);
     if(!key || candidateMap.has(key)) continue;
 
-    const baseRelevance = measureResultRelevance(item, questionTerms, scope);
+    const baseRelevance = measureResultRelevance(item, questionTerms, scope, question);
     if(baseRelevance.score < 3) continue;
 
     candidateMap.set(key, {
@@ -429,7 +506,7 @@ async function searchInternet(question){
   const scored = enriched
     .map((item) => ({
       ...item,
-      ...measureResultRelevance(item, questionTerms, scope)
+      ...measureResultRelevance(item, questionTerms, scope, question)
     }))
     .filter((item) => item.score >= MIN_RELEVANCE_SCORE)
     .filter((item) => (scope.mythos || scope.creator) ? item.termHits > 0 || item.score >= MIN_RELEVANCE_SCORE + 4 : item.termHits > 0)
