@@ -24,6 +24,19 @@ const TRUSTED_MEDIA_DOMAINS = new Set([
   'understandingai.org',
   'simonwillison.net'
 ]);
+const TRUSTED_CREATOR_DOMAINS = new Set([
+  'anotherdimension.rocks',
+  'github.io',
+  'github.com',
+  'linkedin.com',
+  'nl.linkedin.com',
+  'ai-expo.net',
+  'creativeindmena.com',
+  'ai.weekend.hr',
+  'martechview.com',
+  'deadendgallery.com',
+  'bedigitaluk.com'
+]);
 const RATE_LIMIT_STORE = globalThis.__MYTHOS_QA_CONTEXT_RATE_LIMIT__ || (globalThis.__MYTHOS_QA_CONTEXT_RATE_LIMIT__ = new Map());
 
 function sendJson(res, status, payload){
@@ -107,8 +120,35 @@ function isMythosScopedQuestion(question){
   return /\b(anthropic|mythos|glasswing|claude)\b/i.test(question);
 }
 
+function isCreatorScopedQuestion(question){
+  return /\b(rodger werkhoven|rodger|werkhoven|anotherdimension|anótherdimension)\b/i.test(question)
+    || (
+      /\b(maker|creator|author|built|build|made|created)\b/i.test(question)
+      && /\b(tool|site|page|project|app|map|explainer|experience)\b/i.test(question)
+    );
+}
+
+function detectQuestionScope(question){
+  return {
+    mythos: isMythosScopedQuestion(question),
+    creator: isCreatorScopedQuestion(question)
+  };
+}
+
 function buildSearchQueries(question){
   const cleanQuestion = question.replace(/\s+/g, ' ').trim();
+  const scope = detectQuestionScope(cleanQuestion);
+
+  if(scope.creator && !scope.mythos){
+    return [
+      `${cleanQuestion} "Rodger Werkhoven" AI`,
+      `${cleanQuestion} "Rodger Werkhoven"`,
+      `"Rodger Werkhoven" AI`,
+      `"Rodger Werkhoven" "anotherdimension.rocks"`,
+      `"WHOSE INTERNET IS MYTHOS FIXING" "Rodger Werkhoven"`
+    ];
+  }
+
   const queries = [
     `${cleanQuestion} "Claude Mythos Preview" Anthropic`,
     `${cleanQuestion} "Project Glasswing" Anthropic`,
@@ -231,20 +271,39 @@ function extractExcerpt(html){
   return [meta, body].filter(Boolean).join(' ').slice(0, 1400).trim();
 }
 
-function measureResultRelevance(result, questionTerms){
+function measureResultRelevance(result, questionTerms, scope){
   const hostname = getHostname(result.link);
   const combined = `${result.title} ${result.description || ''} ${result.excerpt || ''} ${result.link}`.toLowerCase();
   let score = 0;
 
-  if(hostname.endsWith('anthropic.com')) score += hostname === 'red.anthropic.com' ? 10 : 9;
-  else if(TRUSTED_MEDIA_DOMAINS.has(hostname)) score += 4;
+  if(scope.mythos){
+    if(hostname.endsWith('anthropic.com')) score += hostname === 'red.anthropic.com' ? 10 : 9;
+    else if(TRUSTED_MEDIA_DOMAINS.has(hostname)) score += 4;
 
-  if(combined.includes('claude mythos preview')) score += 8;
-  if(combined.includes('project glasswing')) score += 7;
-  if(combined.includes('mythos')) score += 6;
-  if(combined.includes('glasswing')) score += 5;
-  if(combined.includes('anthropic')) score += 4;
-  if(combined.includes('preview')) score += 1;
+    if(combined.includes('claude mythos preview')) score += 8;
+    if(combined.includes('project glasswing')) score += 7;
+    if(combined.includes('mythos')) score += 6;
+    if(combined.includes('glasswing')) score += 5;
+    if(combined.includes('anthropic')) score += 4;
+    if(combined.includes('preview')) score += 1;
+  }
+
+  if(scope.creator){
+    if(
+      hostname === 'anotherdimension.rocks'
+      || hostname === 'rodgerwerkhoven.github.io'
+      || hostname === 'github.com'
+      || hostname === 'linkedin.com'
+      || hostname === 'nl.linkedin.com'
+    ) score += 8;
+    else if(TRUSTED_CREATOR_DOMAINS.has(hostname)) score += 5;
+
+    if(combined.includes('rodger werkhoven')) score += 12;
+    else if(combined.includes('rodger') && combined.includes('werkhoven')) score += 8;
+    if(combined.includes('anotherdimension')) score += 8;
+    if(combined.includes('whose internet is mythos fixing')) score += 6;
+    if(combined.includes('artificial intelligence') || combined.includes(' field of ai ') || combined.includes(' ai ') || combined.includes('openai')) score += 3;
+  }
 
   let termHits = 0;
   for(const term of questionTerms){
@@ -255,7 +314,8 @@ function measureResultRelevance(result, questionTerms){
   }
 
   if(termHits === 0) score -= 5;
-  if(!combined.includes('anthropic') && !combined.includes('mythos') && !combined.includes('glasswing')) score -= 10;
+  if(scope.mythos && !combined.includes('anthropic') && !combined.includes('mythos') && !combined.includes('glasswing')) score -= 10;
+  if(scope.creator && !combined.includes('rodger') && !combined.includes('werkhoven') && !combined.includes('anotherdimension')) score -= 12;
 
   return { score, termHits };
 }
@@ -294,7 +354,7 @@ async function searchDuckDuckGo(query){
 async function searchInternet(question){
   const queries = buildSearchQueries(question);
   const questionTerms = tokenizeQuestion(question);
-  const mythosScopedQuestion = isMythosScopedQuestion(question);
+  const scope = detectQuestionScope(question);
   const candidateMap = new Map();
 
   for(const query of queries){
@@ -303,7 +363,7 @@ async function searchInternet(question){
       const key = normalizeLink(item.link);
       if(!key || candidateMap.has(key)) continue;
 
-      const baseRelevance = measureResultRelevance(item, questionTerms);
+      const baseRelevance = measureResultRelevance(item, questionTerms, scope);
       if(baseRelevance.score < 3) continue;
 
       candidateMap.set(key, {
@@ -323,10 +383,10 @@ async function searchInternet(question){
   const scored = enriched
     .map((item) => ({
       ...item,
-      ...measureResultRelevance(item, questionTerms)
+      ...measureResultRelevance(item, questionTerms, scope)
     }))
     .filter((item) => item.score >= MIN_RELEVANCE_SCORE)
-    .filter((item) => mythosScopedQuestion || item.termHits > 0)
+    .filter((item) => (scope.mythos || scope.creator) ? item.termHits > 0 || item.score >= MIN_RELEVANCE_SCORE + 4 : item.termHits > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, SEARCH_RESULT_RETURN_LIMIT);
 

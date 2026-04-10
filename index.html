@@ -254,7 +254,7 @@
             <button class="btn primary" id="askQa">Ask the sources</button>
             <button class="btn ghost" id="clearQa">Clear</button>
           </div>
-          <div class="qa-note">The answer uses the official Anthropic source packet first. If that is not enough, the tool searches the web, then explicitly labels the answer as internet fallback and cites those internet results.</div>
+          <div class="qa-note">The answer uses the official Anthropic source packet first, plus this page's own maker/tool context. If that is not enough, the tool searches the web, then explicitly labels the answer as internet fallback and cites those internet results.</div>
           <div class="qa-output" id="qaOutput"></div>
         </div>
       </div>
@@ -865,7 +865,8 @@ qaSuggestions?.addEventListener('click', (e) => {
    ========================================================= */
 const ANTHROPIC_SOURCE_STACK = [
   "Primary source: Anthropic's 'Claude Mythos Preview System Card' dated April 7, 2026, with changelog updates on April 8, 2026.",
-  "Secondary source: Anthropic's 'Project Glasswing' launch page for deployment context, partners, and public framing."
+  "Secondary source: Anthropic's 'Project Glasswing' launch page for deployment context, partners, and public framing.",
+  "Tool provenance source: this page's title, byline, footer, and description stating that the tool is by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS."
 ];
 
 const SYSTEM_CARD_SOURCE_NOTES = [
@@ -888,6 +889,13 @@ const GLASSWING_SOURCE_NOTES = [
   "[Glasswing plans] Anthropic says partner work is expected to focus on local vulnerability detection, black box testing of binaries, securing endpoints, and penetration testing of systems.",
   "[Glasswing plans] Anthropic says participants will, after the research preview, be able to access Mythos Preview through the Claude API, Amazon Bedrock, Google Cloud Vertex AI, and Microsoft Foundry.",
   "[Glasswing plans] Anthropic says it will report publicly within 90 days on what it has learned and what vulnerabilities fixed or improvements made can be disclosed."
+];
+
+const TOOL_CONTEXT_SOURCE_NOTES = [
+  "[Tool title] The page title is 'WHOSE INTERNET IS MYTHOS FIXING? by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS'.",
+  "[Tool byline] The page byline says 'by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS'.",
+  "[Tool description] The page description says this is an interactive Anthropic Mythos explainer by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS.",
+  "[Tool footer] The footer repeats that the tool is by Rodger Werkhoven from ANÓTHERDIMENSION.ROCKS."
 ];
 
 const ANTHROPIC_MYTHOS_FACTS = [
@@ -943,9 +951,9 @@ function formatInternetFallbackPacket(packet){
 }
 
 function buildQAPrompt(question, internetFallbackPacket){
-  return `You are answering a user's question about Anthropic's Claude Mythos Preview and Project Glasswing.
+  return `You are answering a user's question about Anthropic's Claude Mythos Preview, Project Glasswing, or this tool's maker and context.
 
-You must answer from the approved source packet below. Use the official Anthropic sources first. Only if they do not answer the question well enough may you use the internet fallback packet.
+You must answer from the approved source packet below. Use the official Anthropic sources first for Mythos facts, and use the tool provenance packet for who made this tool. Only if those packets do not answer the question well enough may you use the internet fallback packet.
 
 Source priority:
 ${ANTHROPIC_SOURCE_STACK.map((item) => `- ${item}`).join('\n')}
@@ -956,6 +964,9 @@ ${SYSTEM_CARD_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
 Project Glasswing source packet:
 ${GLASSWING_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
 
+Tool provenance source packet:
+${TOOL_CONTEXT_SOURCE_NOTES.map((item) => `- ${item}`).join('\n')}
+
 ${formatInternetFallbackPacket(internetFallbackPacket)}
 
 User question:
@@ -964,14 +975,16 @@ ${question}
 Answering rules:
 - Treat the System Card as the source of truth for model facts, capabilities, risks, restrictions, mitigations, and release status.
 - Use Project Glasswing for launch context, partner context, deployment plans, public framing, credits, and operational scope.
-- If the official source packet is enough, answer only from it and cite only official sources.
-- If the official source packet is not enough, use the internet fallback packet and say explicitly in the first sentence that you could not answer this from the official Mythos sources alone and that the answer below uses internet search results.
+- Use the tool provenance packet for questions about who made this tool, what the tool is called, and how the page identifies its maker.
+- If the source packets are enough, answer only from them and cite only those source labels.
+- If the source packets are not enough, use the internet fallback packet and say explicitly in the first sentence that you could not answer this fully from the approved source packets alone and that the answer below uses internet search results.
+- If the question is about Rodger Werkhoven beyond the page byline, answer only what is supported by the internet fallback packet and do not infer a broader biography.
 - When using the internet fallback packet, cite only the relevant [Internet N] labels for those claims.
 - If neither the official sources nor the internet fallback packet answer the question, say that clearly instead of guessing.
 - Do not invent benchmarks, customer names, release plans, internal intentions, or technical details not present in the source packet.
 - If the question contains a mistaken assumption, correct it gently using the source packet.
 - Answer in 2-4 short paragraphs.
-- End with a final line starting with "Sources:" and cite only the source labels that support the answer, such as [System Card p.3], [Glasswing plans], or [Internet 2].
+- End with a final line starting with "Sources:" and cite only the source labels that support the answer, such as [System Card p.3], [Tool byline], or [Internet 2].
 
 Be factual, concise, and explicit about uncertainty.`;
 }
