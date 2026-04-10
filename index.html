@@ -272,7 +272,7 @@
   <div class="modal-backdrop" id="modal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h2 id="modalTitle">LLM connection</h2>
-      <p class="help"><strong>Plan A</strong> (default): free browser-based access to an online open-source model via Puter.js — no key, no signup, works out of the box.<br/><strong>Plan B</strong>: bring your own API key for a provider you prefer. Keys stay in your browser only.</p>
+      <p class="help" id="connectionHelp"><strong>Plan A</strong> (default): free browser-based access to an online open-source model via Puter.js — no key, no signup, works out of the box.<br/><strong>Plan B</strong>: secure server-side proxy mode. Provider secrets can live on the server, and any optional user-entered key is kept only in memory for this tab instead of being saved in your browser.</p>
 
       <div class="field">
         <label for="provider">Provider</label>
@@ -289,12 +289,12 @@
         <input id="model" placeholder="e.g. openrouter:meta-llama/llama-4-maverick, gpt-4o-mini, claude-sonnet-4-5" />
       </div>
       <div class="field" id="keyField">
-        <label for="apikey">API key (not needed for Plan A)</label>
+        <label for="apikey">Optional API key for this tab only</label>
         <input id="apikey" type="password" placeholder="sk-..." autocomplete="off" />
       </div>
 
-      <div class="privacy">
-        ⚠ Plan A runs through Puter.js in the browser and does not need an API key. For Plan B, your key sits in your browser's localStorage and is sent directly to the provider you chose. Anyone on this device can read it — use a throwaway key with a spend limit for public pages.
+      <div class="privacy" id="proxyPrivacy">
+        Secure mode keeps API keys out of localStorage. If the site owner configures server-side provider keys, visitors never need to enter one. If you choose to enter your own key, it stays only in memory for this tab, is cleared on refresh, and is sent over HTTPS to the server proxy for the current request only.
       </div>
 
       <div class="row">
@@ -593,6 +593,8 @@ const modal = document.getElementById('modal');
 const providerSel = document.getElementById('provider');
 const modelInp = document.getElementById('model');
 const keyInp = document.getElementById('apikey');
+const connectionHelp = document.getElementById('connectionHelp');
+const proxyPrivacy = document.getElementById('proxyPrivacy');
 const statusDot = document.getElementById('statusDot');
 const qrLink = document.getElementById('qrLink');
 const qrCanvas = document.getElementById('qrCanvas');
@@ -606,6 +608,16 @@ const MOBILE_REDIRECT_URL = new URL('mobile.html', location.href).href;
 const FORCED_MOBILE_MODE = new URLSearchParams(location.search).get('mobile') === '1';
 const TOUCH_DEVICE = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const CHROME_LIKE_BROWSER = /CriOS|Chrome/i.test(navigator.userAgent) && !/Edg|OPR|SamsungBrowser/i.test(navigator.userAgent);
+const SECURE_PROXY_URL = new URL('/api/chat', location.origin).href;
+let sessionApiKey = '';
+let secureProxyState = {
+  checked: false,
+  available: false,
+  providers: [],
+  ownerKeys: [],
+  note: 'Checking secure proxy availability…'
+};
+let removedStoredKey = false;
 
 if(FORCED_MOBILE_MODE) document.body.classList.add('mobile-mode');
 if(qrLink) qrLink.href = MOBILE_REDIRECT_URL;
@@ -650,11 +662,85 @@ renderMobileQRCode();
 updateMobileBrowserNote();
 window.addEventListener('resize', updateMobileBrowserNote);
 
+purgeStoredApiKeys();
+checkSecureProxy();
+
+function purgeStoredApiKeys(){
+  try {
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if(current && typeof current === 'object' && 'apikey' in current){
+      delete current.apikey;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+      removedStoredKey = true;
+    }
+  } catch(_) {}
+
+  try {
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+    if(legacy && typeof legacy === 'object'){
+      if('apikey' in legacy) removedStoredKey = true;
+      delete legacy.apikey;
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+    }
+  } catch(_) {}
+}
+
+async function checkSecureProxy(){
+  try {
+    const res = await fetch(SECURE_PROXY_URL, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if(!res.ok) throw new Error(`Proxy unavailable (${res.status})`);
+    const info = await res.json();
+    secureProxyState = {
+      checked: true,
+      available: !!info.ok,
+      providers: info.providers || [],
+      ownerKeys: info.ownerKeys || [],
+      note: info.note || 'Secure proxy available.'
+    };
+  } catch(err){
+    secureProxyState = {
+      checked: true,
+      available: false,
+      providers: [],
+      ownerKeys: [],
+      note: 'Secure proxy not detected on this host. Use Plan A here, or open the secure hosted version.'
+    };
+  } finally {
+    updateSecurityCopy();
+    updateStatus();
+  }
+}
+
+function updateSecurityCopy(){
+  if(connectionHelp){
+    const planBBase = secureProxyState.available
+      ? '<strong>Plan B</strong>: secure server-side proxy mode. Provider secrets can live on the server, and any optional user-entered key is kept only in memory for this tab instead of being saved in your browser.'
+      : '<strong>Plan B</strong>: secure server-side proxy mode is not available on this host right now, so only Plan A is safe and enabled here.';
+    connectionHelp.innerHTML = `<strong>Plan A</strong> (default): free browser-based access to an online open-source model via Puter.js — no key, no signup, works out of the box.<br/>${planBBase}`;
+  }
+
+  if(proxyPrivacy){
+    const ownerKeyNote = secureProxyState.available && secureProxyState.ownerKeys.length
+      ? `Server-side provider keys are configured for: ${secureProxyState.ownerKeys.join(', ')}. You can leave the API-key field blank to use those server-side credentials.`
+      : 'No server-side provider key was detected yet for this host, so leave Plan B off unless you want to use your own temporary key for this tab.';
+    const purgeNote = removedStoredKey
+      ? ' Any older browser-stored API key from previous versions was automatically cleared.'
+      : '';
+    proxyPrivacy.textContent = `${secureProxyState.note} ${ownerKeyNote} If you choose to enter your own key, it stays only in memory for this tab, is cleared on refresh, and is sent over HTTPS to the server proxy for the current request only.${purgeNote}`;
+  }
+
+  if(providerSel && keyInp) toggleKeyField();
+}
+
 function loadSettings(){
   try {
     const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
     const s = (current && Object.keys(current).length ? current : legacy) || {};
+    delete s.apikey;
     if(!s.provider) s.provider = 'puter';
     if(s.provider === 'pollinations') s.provider = 'puter';
     if(!s.model || s.model === 'qwen-coder' || s.model === 'mistral') s.model = defaultModelFor(s.provider);
@@ -662,28 +748,42 @@ function loadSettings(){
   } catch(_) { return { provider:'puter', model:defaultModelFor('puter') }; }
 }
 function saveSettings(s){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  const sanitized = { ...s };
+  delete sanitized.apikey;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
   localStorage.removeItem(LEGACY_STORAGE_KEY);
   updateStatus();
 }
 function isReady(s){
   if(s.provider === 'puter') return !!s.model;
-  return !!(s.apikey && s.provider && s.model);
+  return !!(
+    secureProxyState.available &&
+    s.provider &&
+    s.model &&
+    (sessionApiKey || secureProxyState.ownerKeys.includes(s.provider))
+  );
 }
 function updateStatus(){
   const s = loadSettings();
   const ok = isReady(s);
   statusDot.classList.toggle('ok', !!ok);
   statusDot.title = ok
-    ? (s.provider === 'puter' ? `Plan A: Puter / ${s.model}` : `Plan B: ${s.provider} / ${s.model}`)
+    ? (s.provider === 'puter'
+        ? `Plan A: Puter / ${s.model}`
+        : sessionApiKey
+          ? `Plan B secure proxy / ${s.provider} / ${s.model} / session key`
+          : secureProxyState.ownerKeys.includes(s.provider)
+            ? `Plan B secure proxy / ${s.provider} / ${s.model} / server key`
+            : 'Plan B selected, but no secure key is available yet')
     : 'No LLM connected';
 }
 function openModal(){
   const s = loadSettings();
   providerSel.value = s.provider || 'puter';
   modelInp.value = s.model || defaultModelFor(providerSel.value);
-  keyInp.value = s.apikey || '';
+  keyInp.value = sessionApiKey || '';
   toggleKeyField();
+  updateSecurityCopy();
   modal.classList.add('open');
 }
 function closeModal(){ modal.classList.remove('open'); }
@@ -701,9 +801,15 @@ function toggleKeyField(){
   if(providerSel.value === 'puter'){
     field.style.opacity = '.5';
     keyInp.disabled = true;
+    keyInp.placeholder = 'Not needed for Plan A';
+  } else if(!secureProxyState.available){
+    field.style.opacity = '.6';
+    keyInp.disabled = true;
+    keyInp.placeholder = 'Secure proxy not available on this host';
   } else {
     field.style.opacity = '1';
     keyInp.disabled = false;
+    keyInp.placeholder = 'Optional: kept only in memory for this tab';
   }
 }
 providerSel.addEventListener('change', () => {
@@ -715,18 +821,17 @@ document.getElementById('openSettings').addEventListener('click', openModal);
 document.getElementById('openSettings2').addEventListener('click', openModal);
 document.getElementById('cancelSettings').addEventListener('click', closeModal);
 document.getElementById('saveSettings').addEventListener('click', () => {
+  sessionApiKey = keyInp.value.trim();
   saveSettings({
     provider: providerSel.value,
-    model: modelInp.value.trim(),
-    apikey: keyInp.value.trim()
+    model: modelInp.value.trim()
   });
   closeModal();
 });
 document.getElementById('clearKey').addEventListener('click', () => {
+  sessionApiKey = '';
   keyInp.value = '';
-  const s = loadSettings();
-  s.apikey = '';
-  saveSettings(s);
+  updateStatus();
 });
 modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
 
@@ -946,12 +1051,40 @@ async function askSourceGroundedQuestion(){
 }
 
 async function streamCurrentProvider(s, prompt, onChunk){
-  if(s.provider === 'anthropic'){
-    await streamAnthropic(s, prompt, onChunk);
-  } else if(s.provider === 'puter'){
+  if(s.provider === 'puter'){
     await streamPuterOpenSource(s, prompt, onChunk);
   } else {
-    await streamOpenAICompat(s, prompt, onChunk);
+    await streamSecureProxy(s, prompt, onChunk);
+  }
+}
+
+async function streamSecureProxy(s, prompt, onChunk){
+  const res = await fetch(SECURE_PROXY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':'application/json',
+      'Accept':'text/plain'
+    },
+    body: JSON.stringify({
+      provider: s.provider,
+      model: s.model,
+      prompt,
+      apiKey: sessionApiKey || ''
+    })
+  });
+
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(t.slice(0, 280) || `Secure proxy error (${res.status})`);
+  }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  while(true){
+    const { value, done } = await reader.read();
+    if(done) break;
+    const chunk = dec.decode(value, { stream:true });
+    if(chunk) onChunk(chunk);
   }
 }
 
@@ -993,100 +1126,6 @@ async function streamPuterOpenSource(s, prompt, onChunk){
   onChunk(text);
 }
 
-async function streamOpenAICompat(s, prompt, onChunk){
-  const endpoints = {
-    openai:'https://api.openai.com/v1/chat/completions',
-    groq:'https://api.groq.com/openai/v1/chat/completions',
-    openrouter:'https://openrouter.ai/api/v1/chat/completions'
-  };
-  const url = endpoints[s.provider];
-  const headers = {
-    'Content-Type':'application/json',
-    'Authorization':'Bearer '+s.apikey
-  };
-  if(s.provider === 'openrouter'){
-    headers['HTTP-Referer'] = location.origin || 'https://mythos.local';
-    headers['X-Title'] = 'Mythos Mindmap';
-  }
-  const res = await fetch(url, {
-    method:'POST',
-    headers,
-    body: JSON.stringify({
-      model: s.model,
-      messages: [{ role:'user', content: prompt }],
-      stream: true,
-      temperature: 0.7
-    })
-  });
-  if(!res.ok){
-    const t = await res.text();
-    throw new Error(`${res.status} ${t.slice(0,200)}`);
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  while(true){
-    const { value, done } = await reader.read();
-    if(done) break;
-    buf += dec.decode(value, { stream:true });
-    const lines = buf.split('\n');
-    buf = lines.pop();
-    for(const line of lines){
-      const l = line.trim();
-      if(!l.startsWith('data:')) continue;
-      const data = l.slice(5).trim();
-      if(data === '[DONE]') return;
-      try {
-        const j = JSON.parse(data);
-        const c = j.choices?.[0]?.delta?.content;
-        if(c) onChunk(c);
-      } catch(_){}
-    }
-  }
-}
-
-async function streamAnthropic(s, prompt, onChunk){
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': s.apikey,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body: JSON.stringify({
-      model: s.model,
-      max_tokens: 1024,
-      stream: true,
-      messages: [{ role:'user', content: prompt }]
-    })
-  });
-  if(!res.ok){
-    const t = await res.text();
-    throw new Error(`${res.status} ${t.slice(0,200)}`);
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  while(true){
-    const { value, done } = await reader.read();
-    if(done) break;
-    buf += dec.decode(value, { stream:true });
-    const lines = buf.split('\n');
-    buf = lines.pop();
-    for(const line of lines){
-      const l = line.trim();
-      if(!l.startsWith('data:')) continue;
-      const data = l.slice(5).trim();
-      try {
-        const j = JSON.parse(data);
-        if(j.type === 'content_block_delta' && j.delta?.type === 'text_delta'){
-          onChunk(j.delta.text);
-        }
-      } catch(_){}
-    }
-  }
-}
 </script>
 </body>
 </html>
