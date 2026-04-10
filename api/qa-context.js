@@ -37,6 +37,24 @@ const TRUSTED_CREATOR_DOMAINS = new Set([
   'deadendgallery.com',
   'bedigitaluk.com'
 ]);
+const MYTHOS_DIRECT_SOURCES = [
+  { title: 'Claude Mythos Preview \\ red.anthropic.com', link: 'https://red.anthropic.com/2026/mythos-preview/' },
+  { title: 'Project Glasswing: Securing critical software for the AI era \\ Anthropic', link: 'https://www.anthropic.com/glasswing' },
+  { title: 'Claude Mythos Preview System Card \\ Anthropic', link: 'https://www.anthropic.com/claude-mythos-preview-system-card' },
+  { title: 'Anthropic debuts preview of powerful new AI model Mythos', link: 'https://techcrunch.com/2026/04/07/anthropic-mythos-ai-model-preview-security/' },
+  { title: 'Anthropic limits rollout of Mythos AI model over cyberattack fears - CNBC', link: 'https://www.cnbc.com/2026/04/07/anthropic-claude-mythos-ai-hackers-cyberattacks.html' },
+  { title: 'Why Anthropic will not release Mythos Preview to the public - NBC News', link: 'https://www.nbcnews.com/tech/security/anthropic-project-glasswing-mythos-preview-claude-gets-limited-release-rcna267234' },
+  { title: 'Anthropic’s Project Glasswing sounds necessary - Simon Willison', link: 'https://simonwillison.net/2026/Apr/7/project-glasswing/' },
+  { title: 'Anthropic Teams Up With Its Rivals to Keep AI From Hacking Everything | WIRED', link: 'https://www.wired.com/story/anthropic-mythos-preview-project-glasswing/' }
+];
+const CREATOR_DIRECT_SOURCES = [
+  { title: 'ANOTHER DIMENSION', link: 'https://anotherdimension.rocks/' },
+  { title: 'Rodger Werkhoven - AI & Big Data Expo', link: 'https://www.ai-expo.net/speaker/rodger-werkhoven/' },
+  { title: 'Rodger Werkhoven - Creative Summit', link: 'https://creativeindmena.com/speaker/rodger-werkhoven/' },
+  { title: 'Rodger Werkhoven at AI Weekend', link: 'https://ai.weekend.hr/rodger-werkhoven-independent-creative-director-at-openai-share-his-insights-on-ais-latest-advancements-and-real-world-uses/' },
+  { title: 'Insights from Rodger Werkhoven at OpenAI', link: 'https://martechview.com/insights-from-rodger-werkhoven-at-openai/' },
+  { title: 'WHOSE INTERNET IS MYTHOS FIXING?', link: 'https://rodgerwerkhoven.github.io/WHOSE-INTERNET-IS-MYTHOS-FIXING/' }
+];
 const RATE_LIMIT_STORE = globalThis.__MYTHOS_QA_CONTEXT_RATE_LIMIT__ || (globalThis.__MYTHOS_QA_CONTEXT_RATE_LIMIT__ = new Map());
 
 function sendJson(res, status, payload){
@@ -164,6 +182,13 @@ function buildSearchQueries(question){
   }
 
   return [...new Set(queries)];
+}
+
+function getDirectSourceCandidates(scope){
+  const items = [];
+  if(scope.mythos) items.push(...MYTHOS_DIRECT_SOURCES);
+  if(scope.creator) items.push(...CREATOR_DIRECT_SOURCES);
+  return items;
 }
 
 function decodeDuckDuckGoLink(rawHref = ''){
@@ -356,23 +381,44 @@ async function searchInternet(question){
   const questionTerms = tokenizeQuestion(question);
   const scope = detectQuestionScope(question);
   const candidateMap = new Map();
+  let searchEngineError = '';
 
   for(const query of queries){
-    const results = await searchDuckDuckGo(query);
-    for(const item of results){
-      const key = normalizeLink(item.link);
-      if(!key || candidateMap.has(key)) continue;
+    try {
+      const results = await searchDuckDuckGo(query);
+      for(const item of results){
+        const key = normalizeLink(item.link);
+        if(!key || candidateMap.has(key)) continue;
 
-      const baseRelevance = measureResultRelevance(item, questionTerms, scope);
-      if(baseRelevance.score < 3) continue;
+        const baseRelevance = measureResultRelevance(item, questionTerms, scope);
+        if(baseRelevance.score < 3) continue;
 
-      candidateMap.set(key, {
-        ...item,
-        searchQuery: query,
-        baseScore: baseRelevance.score,
-        baseTermHits: baseRelevance.termHits
-      });
+        candidateMap.set(key, {
+          ...item,
+          searchQuery: query,
+          baseScore: baseRelevance.score,
+          baseTermHits: baseRelevance.termHits
+        });
+      }
+    } catch(err){
+      searchEngineError = err.message || 'Search engine request failed.';
     }
+  }
+
+  for(const item of getDirectSourceCandidates(scope)){
+    const key = normalizeLink(item.link);
+    if(!key || candidateMap.has(key)) continue;
+
+    const baseRelevance = measureResultRelevance(item, questionTerms, scope);
+    if(baseRelevance.score < 3) continue;
+
+    candidateMap.set(key, {
+      ...item,
+      description: item.description || '',
+      searchQuery: 'Direct public web source',
+      baseScore: baseRelevance.score,
+      baseTermHits: baseRelevance.termHits
+    });
   }
 
   const toFetch = [...candidateMap.values()]
@@ -392,6 +438,7 @@ async function searchInternet(question){
 
   return {
     query: queries.join(' || '),
+    searchError: searchEngineError,
     results: scored.map((item, index) => ({
       id: `Internet ${index + 1}`,
       title: item.title,
